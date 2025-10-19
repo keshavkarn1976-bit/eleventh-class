@@ -50,10 +50,8 @@
         const { useState, useEffect, useMemo } = React;
         const { createClient } = supabase;
 
-        // --- GLOBAL CONSTANTS (from config.js) ---
-        // Access configuration keys loaded globally by js/config.js
-        const SUPABASE_URL = window.SUPABASE_URL;
-        const SUPABASE_KEY = window.SUPABASE_KEY;
+        // Configuration variables are now accessed directly from the 'window' object 
+        // within the component logic to avoid the "already declared" error.
 
         const TOTAL_QUESTIONS_TO_PULL = 20;
         const QUIZ_DURATION_MINUTES = 30;
@@ -92,8 +90,12 @@
             // State for Supabase client, initialized to undefined to properly gate the fetching effect
             const [supabaseClient, setSupabaseClient] = useState(undefined);
 
-            // --- 1. Client Initialization (Moved to useEffect for stability) ---
+            // --- 1. Client Initialization ---
             useEffect(() => {
+                // Accessing globals directly from window
+                const SUPABASE_URL = window.SUPABASE_URL;
+                const SUPABASE_KEY = window.SUPABASE_KEY;
+                
                 const IS_CONFIG_VALID = typeof SUPABASE_URL === 'string' && 
                                         SUPABASE_URL.startsWith('http') && 
                                         SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE';
@@ -244,7 +246,7 @@
             }, [quizStatus, quizQuestions, userAnswers]);
 
 
-            // --- 3. RENDERING LOGIC (Updated to move error display) ---
+            // --- 3. RENDERING LOGIC (Unchanged) ---
 
             const renderTimer = () => (
                 <div className={`text-xl font-semibold p-2 rounded-lg transition-colors ${timerSeconds <= 300 ? 'bg-red-100 text-red-600 border border-red-300' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
@@ -455,7 +457,6 @@
                             Economics: Demand Chapter Quiz
                         </h1>
                         {showTimer && renderTimer()}
-                        {/* The general error display has been moved inside the content area for the 'loading' state */}
                     </header>
                     
                     <main className="pb-10">
