@@ -126,9 +126,10 @@
                     }
 
                     try {
-                        // 1. Fetch ALL questions from the 'demand_mcq' table
+                        // 1. Fetch ALL questions from the 'demand_mcqs' table
+                        // FIX: Changed table name from 'demand_mcq' to 'demand_mcqs' to match Supabase database configuration.
                         const { data: allQuestions, error: dbError } = await client
-                            .from('demand_mcq')
+                            .from('demand_mcqs')
                             .select('id, question_text, options, correct_answer_index') 
                             .limit(100); 
 
