@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Economics — CBSE Class 11 Portal</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use Inter font and define custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'cbse-blue': '#1a3e6a', 
+                        'cbse-light': '#f0f4f8', 
+                        'accent-green': '#059669', 
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-cbse-light min-h-screen antialiased">
+
+    <!-- Header & Navigation (Reused from index.html) -->
+    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1a3e6a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap">
+                    <path d="M22 10v6M22 10c0-1.5-1.5-3-3-3s-3 1.5-3 3M22 10c0 1.5-1.5 3-3 3s-3-1.5-3-3"/><path d="M10 21.6l-5-2.5V8.4l5 2.5 5-2.5 5 2.5V6.6L10 2.6 0 6.6l10 4 10-4"/><path d="M10 17.6v-3.2"/>
+                </svg>
+                <h1 class="text-3xl font-extrabold text-cbse-blue tracking-tight">
+                    CBSE Class 11 Portal
+                </h1>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex flex-wrap justify-center md:justify-end space-x-2 sm:space-x-4 text-sm font-medium">
+                <a href="index.html" class="nav-link text-cbse-blue font-semibold">Home</a>
+                <a href="english.html" class="nav-link">English</a>
+                <a href="accountancy.html" class="nav-link">Accountancy</a>
+                <a href="business.html" class="nav-link">Business Studies</a>
+                <a href="economics.html" class="nav-link text-accent-green bg-cbse-light">Economics</a>
+                <a href="mathematics.html" class="nav-link">Mathematics</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content: Economics Chapters -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        
+        <!-- Subject Banner -->
+        <section class="bg-white p-6 sm:p-10 rounded-2xl shadow-xl mb-12 border-l-8 border-accent-green">
+            <h2 class="text-4xl font-extrabold text-gray-800 flex items-center mb-2">
+                <i data-lucide="line-chart" class="text-accent-green mr-3 h-8 w-8"></i>
+                Economics (Class 11)
+            </h2>
+            <p class="text-xl text-gray-600">
+                Explore Microeconomics and Statistics for Economics. Select a chapter to start revising or take a quiz.
+            </p>
+        </section>
+
+        <h3 class="text-2xl font-bold text-cbse-blue mb-6 border-b-2 border-gray-200 pb-2">Microeconomics Section</h3>
+        
+        <!-- Chapter List Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- Chapter 1: Introduction -->
+            <div class="chapter-card group">
+                <h4 class="text-xl font-bold text-gray-800 mb-2">1. Introduction to Economics</h4>
+                <p class="text-gray-500 text-sm mb-4">Central problems, production possibility frontier, and basic concepts.</p>
+                <div class="flex space-x-3">
+                    <button class="action-btn-secondary">View Notes</button>
+                    <button class="action-btn-secondary">Practice Questions</button>
+                    <button class="action-btn-primary bg-gray-200 text-gray-700 hover:bg-gray-300">Quiz</button>
+                </div>
+            </div>
+
+            <!-- Chapter 2: Consumer Equilibrium -->
+            <div class="chapter-card group">
+                <h4 class="text-xl font-bold text-gray-800 mb-2">2. Consumer Equilibrium</h4>
+                <p class="text-gray-500 text-sm mb-4">Utility analysis, indifference curves, and budget line.</p>
+                <div class="flex space-x-3">
+                    <button class="action-btn-secondary">View Notes</button>
+                    <button class="action-btn-secondary">Practice Questions</button>
+                    <button class="action-btn-primary bg-gray-200 text-gray-700 hover:bg-gray-300">Quiz</button>
+                </div>
+            </div>
+
+            <!-- Chapter 3: Demand (The required quiz link) -->
+            <!-- The 'quiz.html' file will likely be a wrapper for the React/JSX component you received earlier -->
+            <a href="quiz.html" class="chapter-card bg-accent-green/10 border-accent-green border-2 ring-4 ring-accent-green/20 group hover:ring-accent-green/40 hover:scale-[1.02]">
+                <h4 class="text-xl font-bold text-accent-green mb-2 group-hover:text-cbse-blue transition-colors">3. Demand (Your Focus Chapter)</h4>
+                <p class="text-gray-600 text-sm mb-4">Law of Demand, determinants, elasticity, and exceptions.</p>
+                <div class="flex justify-center">
+                    <button class="px-6 py-2 bg-accent-green text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition duration-150 transform hover:scale-[1.05] w-full">
+                        Start Timed Quiz (20 Questions) &rarr;
+                    </button>
+                </div>
+            </a>
+
+            <!-- Chapter 4: Production Function -->
+            <div class="chapter-card group">
+                <h4 class="text-xl font-bold text-gray-800 mb-2">4. Production Function</h4>
+                <p class="text-gray-500 text-sm mb-4">Short-run and long-run production, returns to a factor.</p>
+                <div class="flex space-x-3">
+                    <button class="action-btn-secondary">View Notes</button>
+                    <button class="action-btn-secondary">Practice Questions</button>
+                    <button class="action-btn-primary bg-gray-200 text-gray-700 hover:bg-gray-300">Quiz</button>
+                </div>
+            </div>
+            
+        </div>
+
+        <h3 class="text-2xl font-bold text-cbse-blue mb-6 mt-12 border-b-2 border-gray-200 pb-2">Master Quizzes</h3>
+        <div class="p-6 rounded-xl bg-white shadow-lg border-l-4 border-cbse-blue">
+            <h4 class="text-xl font-bold text-cbse-blue mb-2">Full Syllabus Mock Test</h4>
+            <p class="text-gray-600 text-sm mb-4">Test your readiness with a full-length, 90-minute examination covering all CBSE Class 11 Economics chapters.</p>
+            <button class="px-6 py-2 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition duration-150">
+                Start Master Quiz
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Footer (Reused from index.html) -->
+    <footer class="bg-cbse-blue mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Dedicated to Student Success</small>
+        </div>
+    </footer>
+
+    <!-- Script and Custom Styles -->
+    <script>
+        lucide.createIcons();
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
+        });
+    </script>
+    
+    <style>
+        .chapter-card {
+            @apply block p-5 rounded-xl bg-white border border-gray-200 shadow-md transition-all duration-200 transform hover:scale-[1.01] hover:shadow-lg;
+        }
+        .action-btn-secondary {
+            @apply px-4 py-1 text-sm font-semibold rounded-full text-cbse-blue border border-cbse-blue hover:bg-cbse-blue hover:text-white transition duration-150;
+        }
+    </style>
+</body>
+</html>
