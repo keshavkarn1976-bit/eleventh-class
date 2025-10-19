@@ -50,27 +50,10 @@
         const { useState, useEffect, useMemo } = React;
         const { createClient } = supabase;
 
-        // --- GLOBAL CLIENT INITIALIZATION ---
-        let client = null;
-        
-        // Check if the global variables are valid before calling createClient
-        const IS_CONFIG_VALID = typeof window.SUPABASE_URL === 'string' && 
-                                window.SUPABASE_URL.startsWith('http') && 
-                                window.SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE';
-
-        if (IS_CONFIG_VALID) {
-            try {
-                 // Initialize Supabase Client using the globally available variables
-                 client = createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
-                 console.log("Supabase Client initialized successfully.");
-            } catch (e) {
-                console.error("Error during Supabase createClient. Client will remain null, forcing mock data fallback:", e);
-            }
-        } else {
-             console.warn("Supabase configuration missing or invalid placeholder detected. Client remains null, forcing mock data fallback.");
-        }
-        // --- END GLOBAL CLIENT INITIALIZATION ---
-
+        // --- GLOBAL CONSTANTS (from config.js) ---
+        // Access configuration keys loaded globally by js/config.js
+        const SUPABASE_URL = window.SUPABASE_URL;
+        const SUPABASE_KEY = window.SUPABASE_KEY;
 
         const TOTAL_QUESTIONS_TO_PULL = 20;
         const QUIZ_DURATION_MINUTES = 30;
@@ -105,15 +88,45 @@
             const [timerSeconds, setTimerSeconds] = useState(QUIZ_DURATION_MINUTES * 60);
             const [quizStatus, setQuizStatus] = useState('loading'); // 'loading' | 'active' | 'completed' | 'review'
             const [error, setError] = useState(null);
+            
+            // State for Supabase client, initialized to null
+            const [supabaseClient, setSupabaseClient] = useState(null);
 
-            // --- Data Fetching (Supabase & Fallback) ---
+            // --- 1. Client Initialization (Moved to useEffect for stability) ---
             useEffect(() => {
+                const IS_CONFIG_VALID = typeof SUPABASE_URL === 'string' && 
+                                        SUPABASE_URL.startsWith('http') && 
+                                        SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE';
+
+                if (IS_CONFIG_VALID) {
+                    try {
+                        // Attempt to create the client
+                        const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+                        setSupabaseClient(client);
+                        console.log("Supabase Client initialized successfully within component.");
+                    } catch (e) {
+                        console.error("Error during Supabase createClient:", e);
+                        // If initialization fails, set state to null explicitly to trigger fetchQuestions fall-through
+                        setSupabaseClient(null); 
+                    }
+                } else {
+                    console.warn("Supabase configuration missing or invalid placeholder detected. Client remains null.");
+                    setSupabaseClient(null); // Ensure state is null if config is bad
+                }
+            }, []); // Run once on mount
+
+
+            // --- 2. Data Fetching (Supabase & Fallback) ---
+            useEffect(() => {
+                // Only proceed if client state has been determined (i.e., not the initial 'null' state)
+                if (supabaseClient === null && quizStatus !== 'loading') return;
+                
                 const fetchQuestions = async () => {
                     setError(null);
                     setQuizStatus('loading');
                     
-                    // Check if the client was successfully initialized outside the component
-                    if (!client) {
+                    // Check if the client was successfully initialized. If it's null, we fall back.
+                    if (!supabaseClient) {
                         const message = "Supabase client failed to initialize or configuration invalid. Loading mock data for demonstration.";
                         setError(message);
                         console.warn(message);
@@ -126,10 +139,9 @@
                     }
 
                     try {
-                        // 1. Fetch ALL questions from the 'demand_mcqs' table
-                        // FIX: Changed table name from 'demand_mcq' to 'demand_mcqs' to match Supabase database configuration.
-                        const { data: allQuestions, error: dbError } = await client
-                            .from('demand_mcqs')
+                        // Fetch ALL questions from the 'demand_mcqs' table
+                        const { data: allQuestions, error: dbError } = await supabaseClient
+                            .from('demand_mcqs') 
                             .select('id, question_text, options, correct_answer_index') 
                             .limit(100); 
 
@@ -159,9 +171,11 @@
                         setQuizStatus('active');
                     }
                 };
-
+                
+                // Fetch questions only once the client state is definitively set (either a client object or null)
                 fetchQuestions();
-            }, []);
+
+            }, [supabaseClient]); // Rerun when client object is set/changes.
 
             // --- Timer Logic (Unchanged) ---
             useEffect(() => {
