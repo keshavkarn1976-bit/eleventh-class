@@ -8,11 +8,65 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load React and ReactDOM from CDN -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <!-- Load Babel for JSX/TSX support in the browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <!-- Load Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 1. FIREBASE IMPORTS for Persistent State Management -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Setting up global access for the React component
+        window.firebaseDependencies = {
+            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, 
+            onAuthStateChanged, getFirestore, doc, getDoc, setDoc, setLogLevel
+        };
+
+        // Initialize Firebase Globals (Required by Canvas)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
+        const firebaseConfig = JSON.parse(firebaseConfigRaw);
+
+        // --- NEW CHECK HERE ---
+        const isConfigEmpty = Object.keys(firebaseConfig).length === 0;
+
+        if (!isConfigEmpty) {
+             const app = initializeApp(firebaseConfig);
+             window.db = getFirestore(app);
+             window.auth = getAuth(app);
+             window.firebaseError = null; // Clear any previous error
+
+             // Set up auth logic and make sure db/auth is available globally
+             const setupAuth = async () => {
+                 setLogLevel('Debug');
+                 const auth = window.auth;
+
+                 if (typeof __initial_auth_token !== 'undefined') {
+                     await signInWithCustomToken(auth, __initial_auth_token);
+                 } else {
+                     await signInAnonymously(auth);
+                 }
+
+                 // Wait for auth to be ready before mounting React app
+                 onAuthStateChanged(auth, (user) => {
+                     window.userId = user?.uid || crypto.randomUUID();
+                     window.isAuthReady = true;
+                 });
+             };
+             setupAuth();
+        } else {
+             // Fallback for environments without Firebase config
+             window.db = null;
+             window.auth = null;
+             window.userId = crypto.randomUUID();
+             window.isAuthReady = true;
+             window.firebaseError = "FATAL: Firebase configuration (__firebase_config) is missing. Cannot save session progress.";
+             console.error(window.firebaseError);
+        }
+    </script>
     
     <!-- CONFIGURE TAILWIND COLORS -->
     <script>
@@ -32,7 +86,7 @@
         }
     </script>
     
-    <!-- 1. LOAD CONFIGURATION FILE FIRST -->
+    <!-- 2. LOAD CONFIGURATION FILE FIRST -->
     <!-- The keys from js/config.js are loaded here -->
     <script src="./js/config.js"></script> 
 </head>
@@ -45,19 +99,18 @@
         </div>
     </div>
 
-    <!-- 2. THE REACT/JSX CODE FOR THE QUIZ -->
+    <!-- 3. THE REACT/JSX CODE FOR THE QUIZ -->
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
         const { createClient } = supabase;
 
-        // Configuration variables are now accessed directly from the 'window' object 
-        // within the component logic to avoid the "already declared" error.
-
+        // Constants for Quiz and Database
         const TOTAL_QUESTIONS_TO_PULL = 20;
         const QUIZ_DURATION_MINUTES = 30;
+        const MAX_QUESTIONS_IN_POOL = 100; // Total questions in the 'demand_mcqs' table we consider for the sequence
 
         // Mock Data for offline testing 
-        const MOCK_DEMAND_MCQ = Array.from({ length: 100 }, (_, i) => ({
+        const MOCK_DEMAND_MCQ = Array.from({ length: MAX_QUESTIONS_IN_POOL }, (_, i) => ({
             id: i + 1,
             question_text: `Which factor is most likely to cause an outward shift in the demand curve for good X? (Mock Q ${i + 1})`,
             options: [
@@ -65,19 +118,12 @@
                 'A decrease in consumer income.',
                 'An increase in the price of a substitute good.',
                 'A successful advertising campaign for good X.',
+                
             ],
             correct_answer_index: (i % 4)
         }));
 
-        // Function to select N random questions from a list
-        const selectRandomQuestions = (allQuestions, count) => {
-            if (allQuestions.length === 0) return [];
-            const shuffled = [...allQuestions].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, count);
-        };
-
-
-        // --- 2. MAIN QUIZ COMPONENT ---
+        // --- 1. MAIN QUIZ COMPONENT ---
 
         const DemandQuizApp = () => {
             const [quizQuestions, setQuizQuestions] = useState([]);
@@ -87,12 +133,20 @@
             const [quizStatus, setQuizStatus] = useState('loading'); // 'loading' | 'active' | 'completed' | 'review'
             const [error, setError] = useState(null);
             
-            // State for Supabase client, initialized to undefined to properly gate the fetching effect
             const [supabaseClient, setSupabaseClient] = useState(undefined);
-
-            // --- 1. Client Initialization ---
+            const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+            const initialFetchRef = useRef(false); // Ref to ensure fetch runs only once
+            
+            // Check for initial Firebase setup error
             useEffect(() => {
-                // Accessing globals directly from window
+                if (window.firebaseError) {
+                    setError(prev => prev ? prev + ' | ' + window.firebaseError : window.firebaseError);
+                }
+            }, []);
+
+            // --- A. Client Initialization (Supabase and Firebase readiness check) ---
+            useEffect(() => {
+                // Supabase Client Initialization
                 const SUPABASE_URL = window.SUPABASE_URL;
                 const SUPABASE_KEY = window.SUPABASE_KEY;
                 
@@ -102,83 +156,157 @@
 
                 if (IS_CONFIG_VALID) {
                     try {
-                        // Attempt to create the client
                         const client = createClient(SUPABASE_URL, SUPABASE_KEY);
                         setSupabaseClient(client);
-                        console.log("Supabase Client initialized successfully within component.");
                     } catch (e) {
                         console.error("Error during Supabase createClient:", e);
-                        // If initialization fails, set state to null explicitly to trigger fetchQuestions fall-through
                         setSupabaseClient(null); 
                     }
                 } else {
-                    console.warn("Supabase configuration missing or invalid placeholder detected. Client remains null.");
-                    // Explicitly set to null when config is bad
                     setSupabaseClient(null); 
                 }
-            }, []); // Run once on mount
-
-
-            // --- 2. Data Fetching (Supabase & Fallback) ---
-            useEffect(() => {
-                // If supabaseClient is still 'undefined', it means useEffect 1 hasn't finished running yet. Wait for it.
-                if (supabaseClient === undefined) return;
                 
+                // Check if Firebase is ready
+                const checkAuth = () => {
+                    if (window.isAuthReady) {
+                        setIsFirebaseReady(true);
+                    } else {
+                        setTimeout(checkAuth, 100); // Poll until global auth is ready
+                    }
+                };
+                checkAuth();
+
+            }, []); 
+
+
+            // --- B. Data Fetching (Supabase + Offset/Persistence) ---
+            useEffect(() => {
+                // Wait until both Supabase client is initialized AND Firebase is authenticated
+                if (supabaseClient === undefined || !isFirebaseReady || initialFetchRef.current) return;
+                
+                initialFetchRef.current = true; // Mark that the initial fetch is running
+
                 const fetchQuestions = async () => {
-                    setError(null);
+                    // Prepend the firebase error if it exists
+                    if (window.firebaseError) {
+                        setError(window.firebaseError);
+                    } else {
+                        setError(null);
+                    }
+                    
                     setQuizStatus('loading');
                     
-                    // If the client is null, it means the config was bad (from useEffect 1). Fall back immediately.
-                    if (!supabaseClient) {
-                        const message = "Supabase client failed to initialize or configuration invalid. Loading mock data for demonstration.";
-                        setError(message);
-                        console.warn(message);
-                        
-                        const mockSelected = selectRandomQuestions(MOCK_DEMAND_MCQ, TOTAL_QUESTIONS_TO_PULL);
-                        setQuizQuestions(mockSelected);
-                        setUserAnswers(mockSelected.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
-                        setQuizStatus('active');
-                        return;
+                    const userId = window.userId;
+                    let currentOffset = 0;
+                    
+                    const isSupabaseWorking = !!supabaseClient;
+                    const isFirestoreWorking = !!window.db; // Check if Firestore was initialized
+
+                    
+                    // --- 1. GET PERSISTENT OFFSET FROM FIRESTORE ---
+                    if (isFirestoreWorking) {
+                        try {
+                            const { doc, getDoc } = window.firebaseDependencies;
+                            // Path must match the security rules: /artifacts/{appId}/users/{userId}/...
+                            const offsetPath = `/artifacts/${window.__app_id || 'default-app-id'}/users/${userId}/quiz_settings`; 
+                            const docRef = doc(window.db, offsetPath, 'demand_quiz_offset');
+                            const docSnap = await getDoc(docRef);
+
+                            if (docSnap.exists()) {
+                                const savedOffset = docSnap.data().offset;
+                                if (savedOffset >= 0 && savedOffset < MAX_QUESTIONS_IN_POOL && savedOffset % TOTAL_QUESTIONS_TO_PULL === 0) {
+                                    currentOffset = savedOffset;
+                                    console.log(`Loaded offset: ${currentOffset}. Fetching next block.`);
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Error fetching offset from Firestore, using default 0. This might be a rule failure.", e);
+                            setError(prev => (prev ? prev + ' | ' : '') + "Firestore read failed (check rules/connection). Using offset 0.");
+                            // Continue with offset 0
+                        }
+                    } else if (!isFirestoreWorking && !window.firebaseError) {
+                         // This catches cases where config was loaded but DB connection still failed
+                         setError(prev => (prev ? prev + ' | ' : '') + "Firestore service failed to initialize. Using offset 0.");
                     }
 
-                    try {
-                        // Fetch ALL questions from the 'demand_mcqs' table
-                        const { data: allQuestions, error: dbError } = await supabaseClient
-                            .from('demand_mcqs') 
-                            .select('id, question_text, options, correct_answer_index') 
-                            .limit(100); 
 
-                        if (dbError) throw dbError;
+                    // --- 2. FETCH SEQUENTIAL BLOCK FROM SUPABASE ---
+                    if (isSupabaseWorking) {
+                        try {
+                            const { data: allQuestions, error: dbError } = await supabaseClient
+                                .from('demand_mcqs') 
+                                .select('id, question_text, options, correct_answer_index') 
+                                .order('id', { ascending: true })
+                                .limit(TOTAL_QUESTIONS_TO_PULL)
+                                .range(currentOffset, currentOffset + TOTAL_QUESTIONS_TO_PULL - 1); 
 
-                        const selectedQuestions = selectRandomQuestions(allQuestions, TOTAL_QUESTIONS_TO_PULL);
-                        
-                        if (selectedQuestions.length === 0) {
-                             console.warn("Supabase returned no questions. Falling back to mock data.");
-                             const mockSelected = selectRandomQuestions(MOCK_DEMAND_MCQ, TOTAL_QUESTIONS_TO_PULL);
-                             setQuizQuestions(mockSelected);
-                             setUserAnswers(mockSelected.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
-                        } else {
-                            setQuizQuestions(selectedQuestions);
-                            setUserAnswers(selectedQuestions.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
+                            if (dbError) throw dbError;
+
+                            const selectedQuestions = allQuestions || [];
+                            
+                            if (selectedQuestions.length === 0) {
+                                 console.warn("Supabase returned no questions. Falling back to mock data.");
+                                 const mockBlock = MOCK_DEMAND_MCQ.slice(currentOffset, currentOffset + TOTAL_QUESTIONS_TO_PULL);
+                                 setQuizQuestions(mockBlock);
+                                 setUserAnswers(mockBlock.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
+                                 setError(prev => (prev ? prev + ' | ' : '') + `Supabase returned no results for offset ${currentOffset}. Using mock data.`);
+                            } else {
+                                setQuizQuestions(selectedQuestions);
+                                setUserAnswers(selectedQuestions.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
+                                setError(prev => prev === window.firebaseError ? window.firebaseError : null); // Only keep the Firebase error if it exists
+                            }
+                            
+                            // --- 3. CALCULATE AND SAVE THE NEXT OFFSET FOR NEXT TIME ---
+                            if (isFirestoreWorking) {
+                                const nextOffset = (currentOffset + TOTAL_QUESTIONS_TO_PULL) % MAX_QUESTIONS_IN_POOL;
+
+                                try {
+                                    const { doc, setDoc } = window.firebaseDependencies;
+                                    const offsetPath = `/artifacts/${window.__app_id || 'default-app-id'}/users/${userId}/quiz_settings`;
+                                    const docRef = doc(window.db, offsetPath, 'demand_quiz_offset');
+                                    
+                                    await setDoc(docRef, { 
+                                        offset: nextOffset,
+                                        totalQuestions: MAX_QUESTIONS_IN_POOL,
+                                        blockSize: TOTAL_QUESTIONS_TO_PULL,
+                                        lastUpdated: new Date().toISOString()
+                                    }, { merge: true }); 
+                                    console.log(`Saved next offset: ${nextOffset} for user ${userId}.`);
+                                    setError(prev => prev === window.firebaseError ? window.firebaseError : null); // If save succeeded, clear Supabase/Firestore error
+                                } catch (e) {
+                                    console.error("Error saving offset to Firestore, write failed (check rules/connection):", e);
+                                    setError(prev => (prev ? prev + ' | ' : '') + "Firestore write failed (check rules/connection).");
+                                }
+                            }
+                            
+                            setQuizStatus('active');
+
+                        } catch (err) {
+                            console.error("Error loading questions from Supabase:", err.message);
+                            setError(prev => (prev ? prev + ' | ' : '') + `Supabase connection failed. Error: ${err.message}. Loading mock data starting at offset ${currentOffset}.`);
+                            
+                            // Fallback: Use the corresponding mock block based on the current offset
+                            const mockBlock = MOCK_DEMAND_MCQ.slice(currentOffset, TOTAL_QUESTIONS_TO_PULL);
+                            setQuizQuestions(mockBlock);
+                            setUserAnswers(mockBlock.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
+                            setQuizStatus('active');
                         }
-
-                        setQuizStatus('active');
-
-                    } catch (err) {
-                        console.error("Error loading questions:", err.message);
-                        setError("Could not load questions from database. Check console/network tab. Loading mock data.");
+                    } else {
+                        // Supabase client initialization failed (bad config or environment)
+                        const message = "Supabase client failed to initialize or configuration invalid. Loading mock data starting at offset 0.";
+                        setError(prev => (prev ? prev + ' | ' : '') + message);
+                        console.warn(message);
                         
-                        const mockSelected = selectRandomQuestions(MOCK_DEMAND_MCQ, TOTAL_QUESTIONS_TO_PULL);
+                        const mockSelected = MOCK_DEMAND_MCQ.slice(0, TOTAL_QUESTIONS_TO_PULL);
                         setQuizQuestions(mockSelected);
                         setUserAnswers(mockSelected.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
                         setQuizStatus('active');
                     }
                 };
                 
-                // Fetch questions once the client state is definitively set (either a client object or null)
                 fetchQuestions();
 
-            }, [supabaseClient]); // Rerun when client object is set/changes.
+            }, [supabaseClient, isFirebaseReady]); 
 
             // --- Timer Logic (Unchanged) ---
             useEffect(() => {
@@ -192,7 +320,7 @@
                 }
             }, [quizStatus, timerSeconds]);
 
-            // --- Handlers (Unchanged) ---
+            // --- Handlers, Computed Values, Rendering Logic (Mostly Unchanged) ---
 
             const handleOptionSelect = (optionIndex) => {
                 if (quizStatus !== 'active' || !quizQuestions.length) return;
@@ -226,7 +354,6 @@
                 setTimerSeconds(0);
             };
 
-            // --- Computed Values (Unchanged) ---
             const formatTime = (totalSeconds) => {
                 const minutes = Math.floor(totalSeconds / 60);
                 const seconds = totalSeconds % 60;
@@ -246,7 +373,7 @@
             }, [quizStatus, quizQuestions, userAnswers]);
 
 
-            // --- 3. RENDERING LOGIC (Unchanged) ---
+            // --- RENDERING LOGIC ---
 
             const renderTimer = () => (
                 <div className={`text-xl font-semibold p-2 rounded-lg transition-colors ${timerSeconds <= 300 ? 'bg-red-100 text-red-600 border border-red-300' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
@@ -264,9 +391,10 @@
                     <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-4xl w-full mx-auto">
                         {/* Display error prominently if quiz is active but there was a config/fetch error */}
                         {error && (
-                            <div className="mb-6 bg-yellow-100 p-4 rounded-lg border border-yellow-300 text-yellow-800">
-                                <p className="font-semibold">Note:</p>
+                            <div className="mb-6 bg-red-100 p-4 rounded-lg border border-red-300 text-red-800">
+                                <p className="font-semibold">Session/Connection Warning:</p>
                                 <p>{error}</p>
+                                {!window.db && <p className="mt-2 font-bold">Action Required: If you see "FATAL," ensure your environment provides the Firebase config.</p>}
                             </div>
                         )}
                         
@@ -329,8 +457,8 @@
             const renderCompletionResults = () => (
                 <div className="bg-white p-12 rounded-xl shadow-2xl border-4 border-accent-green max-w-3xl w-full mx-auto text-center">
                     {error && (
-                        <div className="mb-6 bg-yellow-100 p-4 rounded-lg border border-yellow-300 text-yellow-800">
-                            <p className="font-semibold">Data Warning:</p>
+                        <div className="mb-6 bg-red-100 p-4 rounded-lg border border-red-300 text-red-800">
+                            <p className="font-semibold">Session/Connection Warning:</p>
                             <p>{error}</p>
                         </div>
                     )}
@@ -354,8 +482,8 @@
             const renderReviewMode = () => (
                 <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-6xl w-full mx-auto">
                     {error && (
-                        <div className="mb-6 bg-yellow-100 p-4 rounded-lg border border-yellow-300 text-yellow-800">
-                            <p className="font-semibold">Data Warning:</p>
+                        <div className="mb-6 bg-red-100 p-4 rounded-lg border border-red-300 text-red-800">
+                            <p className="font-semibold">Session/Connection Warning:</p>
                             <p>{error}</p>
                         </div>
                     )}
@@ -427,11 +555,11 @@
                             {/* Prominent error display in the loading state */}
                             {error ? (
                                 <div className="mt-4 bg-red-100 p-4 rounded-lg border border-red-300">
-                                    <p className="text-xl font-semibold text-red-700">Database Connection Warning:</p>
+                                    <p className="text-xl font-semibold text-red-700">Database/Session Warning:</p>
                                     <p className="text-lg text-red-600 mt-2">{error}</p>
                                 </div>
                             ) : (
-                                <p className="text-xl text-gray-600">Loading 20 random questions from the database...</p>
+                                <p className="text-xl text-gray-600">Checking user progress and loading the next set of 20 questions...</p>
                             )}
                         </div>
                     );
@@ -465,15 +593,24 @@
 
                     <footer className="text-center text-sm text-gray-500 mt-10">
                         <p>Powered by Supabase (or Mock Data). Timed for {QUIZ_DURATION_MINUTES} minutes.</p>
+                        <p className="mt-1">User ID: {window.userId || 'Loading...'}</p>
                     </footer>
                 </div>
             );
         };
         
         // --- 4. MOUNT REACT APP ---
-        const container = document.getElementById('quiz-root');
-        const root = ReactDOM.createRoot(container);
-        root.render(<DemandQuizApp />);
+        // Ensure the app only mounts once window.isAuthReady is true
+        const startApp = () => {
+            if (window.isAuthReady) {
+                const container = document.getElementById('quiz-root');
+                const root = ReactDOM.createRoot(container);
+                root.render(<DemandQuizApp />);
+            } else {
+                setTimeout(startApp, 100);
+            }
+        }
+        startApp();
     </script>
 </body>
 </html>
