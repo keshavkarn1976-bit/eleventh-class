@@ -4,9 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CBSE Class 11 — Academic Study Portal</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configure Tailwind to use Inter font and define custom colors -->
     <script>
         tailwind.config = {
             theme: {
@@ -15,135 +13,25 @@
                         sans: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        'cbse-blue': '#1a3e6a', // Deep Blue - Professional and Authoritative
-                        'cbse-light': '#f0f4f8', // Light Gray-Blue for backgrounds
-                        'accent-green': '#059669', // A clear, confident green
+                        'cbse-blue': '#1a3e6a', 
+                        'cbse-light': '#f0f4f8', 
+                        'accent-green': '#059669', 
                     }
                 }
             }
         }
     </script>
-    <!-- Load Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-cbse-light min-h-screen antialiased">
-
-    <!-- Header & Navigation -->
-    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center space-x-3 mb-4 md:mb-0">
-                <!-- Icon/Logo Placeholder -->
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1a3e6a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap">
-                    <path d="M22 10v6M22 10c0-1.5-1.5-3-3-3s-3 1.5-3 3M22 10c0 1.5-1.5 3-3 3s-3-1.5-3-3"/><path d="M10 21.6l-5-2.5V8.4l5 2.5 5-2.5 5 2.5V6.6L10 2.6 0 6.6l10 4 10-4"/><path d="M10 17.6v-3.2"/>
-                </svg>
-                <h1 class="text-3xl font-extrabold text-cbse-blue tracking-tight">
-                    CBSE Class 11 Portal
-                </h1>
-            </div>
-            
-            <!-- Navigation -->
-            <nav class="flex flex-wrap justify-center md:justify-end space-x-2 sm:space-x-4 text-sm font-medium">
-                <a href="english.html" class="nav-link">English</a>
-                <a href="accountancy.html" class="nav-link">Accountancy</a>
-                <a href="business.html" class="nav-link">Business Studies</a>
-                <a href="economics.html" class="nav-link">Economics</a>
-                <a href="mathematics.html" class="nav-link">Mathematics</a>
-            </nav>
-        </div>
-    </header>
-
-    <!-- Hero Section / Introduction -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <section class="bg-white p-6 sm:p-10 rounded-2xl shadow-xl mb-12 border-b-4 border-accent-green">
-            <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-4">
-                Structured Learning for Academic Excellence
-            </h2>
-            <p class="text-xl text-gray-600 max-w-3xl">
-                Access professional, chapter-wise resources, practice questions, and timed quizzes designed specifically for the CBSE Class 11 Commerce stream curriculum.
-            </p>
-        </section>
-
-        <!-- Subject Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
-            <!-- Card 1: Economics -->
-            <a class="subject-card group" href="economics.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="line-chart" class="text-accent-green group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Economics</h3>
-                </div>
-                <p class="card-description">Comprehensive chapters, detailed notes, and focused quiz sets, including the 'Demand' chapter quiz.</p>
-                <span class="card-link">Start Learning &rarr;</span>
-            </a>
-
-            <!-- Card 2: Accountancy -->
-            <a class="subject-card group" href="accountancy.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="wallet" class="text-cbse-blue group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Accountancy</h3>
-                </div>
-                <p class="card-description">Practice numerical problems, understand debit/credit rules, and test your conceptual knowledge.</p>
-                <span class="card-link">Start Learning &rarr;</span>
-            </a>
-
-            <!-- Card 3: Business Studies -->
-            <a class="subject-card group" href="business.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="briefcase" class="text-red-600 group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Business Studies</h3>
-                </div>
-                <p class="card-description">Master key concepts, case studies, and functional areas of business and management.</p>
-                <span class="card-link">Start Learning &rarr;</span>
-            </a>
-
-            <!-- Card 4: Mathematics -->
-            <a class="subject-card group" href="mathematics.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="square-root" class="text-purple-600 group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Mathematics</h3>
-                </div>
-                <p class="card-description">Chapter-wise practice modules and master quizzes for sets, relations, calculus foundation, and statistics.</p>
-                <span class="card-link">Start Learning &rarr;</span>
-            </a>
-
-            <!-- Card 5: English -->
-            <a class="subject-card group" href="english.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="book-open-text" class="text-orange-600 group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">English</h3>
-                </div>
-                <p class="card-description">Grammar tests, reading comprehension practice, and literature analysis tools.</p>
-                <span class="card-link">Start Learning &rarr;</span>
-            </a>
-
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-cbse-blue mt-12 py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-            <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Dedicated to Student Success</small>
-        </div>
-    </footer>
-
-    <!-- Script to initialize Lucide icons -->
-    <script>
-        lucide.createIcons();
-
-        // Custom styling for navigation links using JS to apply a common class
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
-        });
-    </script>
     
-    <!-- Custom CSS Styles (Tailwind Class Definitions) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    
     <style>
         .subject-card {
             @apply block p-6 rounded-xl bg-white border border-gray-200 shadow-lg transition-all duration-300 transform hover:scale-[1.03] hover:shadow-2xl;
         }
         .subject-card:hover {
-             /* Apply a gradient or solid background on hover for a premium look */
-            background-color: theme('colors.cbse-blue'); 
+            background-color: theme('colors.cbse-blue');  
         }
         .card-title {
             @apply text-xl font-bold text-gray-800 group-hover:text-white transition-colors;
@@ -154,6 +42,188 @@
         .card-link {
             @apply inline-block text-sm font-semibold text-accent-green group-hover:text-white border-b border-accent-green group-hover:border-white transition-colors;
         }
+        .nav-link {
+             @apply px-3 py-1 rounded-lg text-gray-600 hover:bg-cbse-light hover:text-cbse-blue transition;
+        }
+        
+        /* Class to visually and functionally disable links */
+        .protected-link {
+            pointer-events: none;
+            cursor: not-allowed;
+            opacity: 0.5; 
+        }
+        .protected-link:hover {
+            transform: none; 
+            box-shadow: none; 
+            background-color: white; 
+        }
+        .protected-link .card-title,
+        .protected-link .card-link {
+             color: theme('colors.gray.800');
+             border-color: theme('colors.gray.200');
+        }
     </style>
+</head>
+<body class="bg-cbse-light min-h-screen antialiased">
+
+    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1a3e6a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap">
+                    <path d="M22 10v6M22 10c0-1.5-1.5-3-3-3s-3 1.5-3 3M22 10c0 1.5-1.5 3-3 3s-3-1.5-3-3"/><path d="M10 21.6l-5-2.5V8.4l5 2.5 5-2.5 5 2.5V6.6L10 2.6 0 6.6l10 4 10-4"/><path d="M10 17.6v-3.2"/>
+                </svg>
+                <h1 class="text-3xl font-extrabold text-cbse-blue tracking-tight">
+                    CBSE Class 11 Portal
+                </h1>
+            </div>
+            
+            <nav id="main-nav" class="flex flex-wrap justify-center md:justify-end space-x-2 sm:space-x-4 text-sm font-medium">
+                <a href="english.html" class="nav-link protected-link">English</a>
+                <a href="accountancy.html" class="nav-link protected-link">Accountancy</a>
+                <a href="business.html" class="nav-link protected-link">Business Studies</a>
+                <a href="economics.html" class="nav-link protected-link">Economics</a>
+                <a href="mathematics.html" class="nav-link protected-link">Mathematics</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <section class="bg-white p-6 sm:p-10 rounded-2xl shadow-xl mb-12 border-b-4 border-accent-green">
+            <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-4">
+                Structured Learning for Academic Excellence
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl">
+                Access professional, chapter-wise resources, practice questions, and timed quizzes designed specifically for the CBSE Class 11 Commerce stream curriculum.
+            </p>
+            
+            <div id="auth-ui" class="mt-8">
+                <p id="auth-status" class="text-xl font-bold text-red-600 mb-4">Please sign in to access the study material.</p>
+                <button id="google-sign-in" class="py-3 px-6 rounded-md shadow-md text-white bg-cbse-blue hover:bg-gray-700 transition">
+                    Sign in with Google
+                </button>
+                <button id="sign-out" class="hidden py-3 px-6 rounded-md shadow-md text-white bg-red-500 hover:bg-red-600 transition">
+                    Sign Out
+                </button>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <a class="subject-card group protected-link" href="economics.html">
+                 <div class="flex items-center space-x-3 mb-2"><i data-lucide="line-chart" class="text-accent-green group-hover:text-white transition-colors h-6 w-6"></i><h3 class="card-title">Economics</h3></div>
+                 <p class="card-description">Comprehensive chapters, detailed notes, and focused quiz sets, including the 'Demand' chapter quiz.</p>
+                 <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <a class="subject-card group protected-link" href="accountancy.html">
+                 <div class="flex items-center space-x-3 mb-2"><i data-lucide="wallet" class="text-cbse-blue group-hover:text-white transition-colors h-6 w-6"></i><h3 class="card-title">Accountancy</h3></div>
+                 <p class="card-description">Practice numerical problems, understand debit/credit rules, and test your conceptual knowledge.</p>
+                 <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <a class="subject-card group protected-link" href="business.html">
+                 <div class="flex items-center space-x-3 mb-2"><i data-lucide="briefcase" class="text-red-600 group-hover:text-white transition-colors h-6 w-6"></i><h3 class="card-title">Business Studies</h3></div>
+                 <p class="card-description">Master key concepts, case studies, and functional areas of business and management.</p>
+                 <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <a class="subject-card group protected-link" href="mathematics.html">
+                 <div class="flex items-center space-x-3 mb-2"><i data-lucide="square-root" class="text-purple-600 group-hover:text-white transition-colors h-6 w-6"></i><h3 class="card-title">Mathematics</h3></div>
+                 <p class="card-description">Chapter-wise practice modules and master quizzes for sets, relations, calculus foundation, and statistics.</p>
+                 <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <a class="subject-card group protected-link" href="english.html">
+                 <div class="flex items-center space-x-3 mb-2"><i data-lucide="book-open-text" class="text-orange-600 group-hover:text-white transition-colors h-6 w-6"></i><h3 class="card-title">English</h3></div>
+                 <p class="card-description">Grammar tests, reading comprehension practice, and literature analysis tools.</p>
+                 <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+        </div>
+    </main>
+
+    <footer class="bg-cbse-blue mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Dedicated to Student Success</small>
+        </div>
+    </footer>
+
+    <script>
+        // YOUR FIREBASE CONFIGURATION (The object you provided)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFkuTUao-HGQhX438cVOUvUiS3kT2m7Os",
+            authDomain: "eleventhexam-f0fab.firebaseapp.com",
+            projectId: "eleventhexam-f0fab",
+            storageBucket: "eleventhexam-f0fab.firebasestorage.app",
+            messagingSenderId: "192315627607",
+            appId: "1:192315627607:web:9f2e2794dc42aaa3352b12",
+            measurementId: "G-3GXX6VXYT1"
+        };
+        
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        // We initialize the specific service we need (Auth)
+        const auth = app.auth();
+
+        // UI Elements
+        const signInButton = document.getElementById('google-sign-in');
+        const signOutButton = document.getElementById('sign-out');
+        const authStatus = document.getElementById('auth-status');
+        const PROTECTED_LINKS_SELECTOR = 'a[href$=".html"]'; // Targets all local links
+
+        // 1. Sign In Function
+        signInButton.addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            // Use signInWithPopup for the easiest user experience
+            auth.signInWithPopup(provider)
+                .catch((error) => {
+                    console.error("Sign-in failed:", error);
+                    alert("Sign-in failed. Please ensure Google Sign-In is enabled in your Firebase console and try again.");
+                });
+        });
+
+        // 2. Sign Out Function
+        signOutButton.addEventListener('click', () => {
+            auth.signOut().catch((error) => {
+                console.error("Sign-out failed:", error);
+            });
+        });
+
+        // 3. Authentication State Listener (This runs every time the login status changes)
+        auth.onAuthStateChanged((user) => {
+            const protectedLinks = document.querySelectorAll(PROTECTED_LINKS_SELECTOR);
+
+            if (user) {
+                // User is signed in. ENABLE access.
+                authStatus.textContent = `Access Granted! Welcome, ${user.displayName || 'Learner'}.`;
+                authStatus.classList.remove('text-red-600');
+                authStatus.classList.add('text-accent-green');
+                signInButton.classList.add('hidden');
+                signOutButton.classList.remove('hidden');
+                
+                // Remove the disabling class from all protected links
+                protectedLinks.forEach(link => {
+                    link.classList.remove('protected-link');
+                });
+            } else {
+                // User is signed out. DISABLE access.
+                authStatus.textContent = "Please sign in to access the study material.";
+                authStatus.classList.remove('text-accent-green');
+                authStatus.classList.add('text-red-600');
+                signInButton.classList.remove('hidden');
+                signOutButton.classList.add('hidden');
+
+                // Add the disabling class to all protected links
+                protectedLinks.forEach(link => {
+                    link.classList.add('protected-link');
+                });
+            }
+        });
+
+        // Initialize Lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
 </body>
 </html>
