@@ -23,8 +23,8 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     
     <style>
         .subject-card {
@@ -178,7 +178,7 @@
             auth.signInWithPopup(provider)
                 .catch((error) => {
                     console.error("Sign-in failed:", error);
-                    alert("Sign-in failed. Please ensure Google Sign-In is enabled in your Firebase console and try again.");
+                    alert("Sign-in failed. Please ensure Google Sign-In is enabled and popups are not blocked.");
                 });
         });
 
