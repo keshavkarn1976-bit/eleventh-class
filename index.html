@@ -1,58 +1,159 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CBSE Class 11 — Study Portal</title>
-  <link rel="stylesheet" href="css/style.css" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CBSE Class 11 — Academic Study Portal</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind to use Inter font and define custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'cbse-blue': '#1a3e6a', // Deep Blue - Professional and Authoritative
+                        'cbse-light': '#f0f4f8', // Light Gray-Blue for backgrounds
+                        'accent-green': '#059669', // A clear, confident green
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Load Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-  <header class="site-header">
-    <div class="container">
-      <h1>CBSE Class 11 Academic Portal</h1>
-      <nav>
-        <a href="english.html">English</a>
-        <a href="accountancy.html">Accountancy</a>
-        <a href="business.html">Business Studies</a>
-        <a href="economics.html">Economics</a>
-        <a href="mathematics.html">Mathematics</a>
-      </nav>
-    </div>
-  </header>
+<body class="bg-cbse-light min-h-screen antialiased">
 
-  <main class="container hero">
-    <section class="intro">
-      <h2>Professional resources and chapter-wise quizzes</h2>
-      <p>Designed for CBSE Class 11 students. Click a subject to find chapters, quizzes and resources.</p>
-      <div class="subject-cards">
-        <a class="card" href="economics.html">
-          <h3>Economics</h3>
-          <p>Chapters, notes and quizzes (including Demand chapter quiz).</p>
-        </a>
-        <a class="card" href="mathematics.html">
-          <h3>Mathematics</h3>
-          <p>Chapter-wise practice and master quizzes</p>
-        </a>
-        <a class="card" href="accountancy.html">
-          <h3>Accountancy</h3>
-          <p>Chapter notes and tests</p>
-        </a>
-        <a class="card" href="business.html">
-          <h3>Business Studies</h3>
-          <p>Concepts and chapter quizzes</p>
-        </a>
-        <a class="card" href="english.html">
-          <h3>English</h3>
-          <p>Reading, writing and grammar quizzes</p>
-        </a>
-      </div>
-    </section>
-  </main>
+    <!-- Header & Navigation -->
+    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                <!-- Icon/Logo Placeholder -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1a3e6a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap">
+                    <path d="M22 10v6M22 10c0-1.5-1.5-3-3-3s-3 1.5-3 3M22 10c0 1.5-1.5 3-3 3s-3-1.5-3-3"/><path d="M10 21.6l-5-2.5V8.4l5 2.5 5-2.5 5 2.5V6.6L10 2.6 0 6.6l10 4 10-4"/><path d="M10 17.6v-3.2"/>
+                </svg>
+                <h1 class="text-3xl font-extrabold text-cbse-blue tracking-tight">
+                    CBSE Class 11 Portal
+                </h1>
+            </div>
+            
+            <!-- Navigation -->
+            <nav class="flex flex-wrap justify-center md:justify-end space-x-2 sm:space-x-4 text-sm font-medium">
+                <a href="english.html" class="nav-link">English</a>
+                <a href="accountancy.html" class="nav-link">Accountancy</a>
+                <a href="business.html" class="nav-link">Business Studies</a>
+                <a href="economics.html" class="nav-link">Economics</a>
+                <a href="mathematics.html" class="nav-link">Mathematics</a>
+            </nav>
+        </div>
+    </header>
 
-  <footer class="site-footer">
-    <div class="container">
-      <small>© 2025 CBSE Class 11 Portal — Built for study & practice</small>
-    </div>
-  </footer>
+    <!-- Hero Section / Introduction -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <section class="bg-white p-6 sm:p-10 rounded-2xl shadow-xl mb-12 border-b-4 border-accent-green">
+            <h2 class="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-4">
+                Structured Learning for Academic Excellence
+            </h2>
+            <p class="text-xl text-gray-600 max-w-3xl">
+                Access professional, chapter-wise resources, practice questions, and timed quizzes designed specifically for the CBSE Class 11 Commerce stream curriculum.
+            </p>
+        </section>
+
+        <!-- Subject Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <!-- Card 1: Economics -->
+            <a class="subject-card group" href="economics.html">
+                <div class="flex items-center space-x-3 mb-2">
+                    <i data-lucide="line-chart" class="text-accent-green group-hover:text-white transition-colors h-6 w-6"></i>
+                    <h3 class="card-title">Economics</h3>
+                </div>
+                <p class="card-description">Comprehensive chapters, detailed notes, and focused quiz sets, including the 'Demand' chapter quiz.</p>
+                <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <!-- Card 2: Accountancy -->
+            <a class="subject-card group" href="accountancy.html">
+                <div class="flex items-center space-x-3 mb-2">
+                    <i data-lucide="wallet" class="text-cbse-blue group-hover:text-white transition-colors h-6 w-6"></i>
+                    <h3 class="card-title">Accountancy</h3>
+                </div>
+                <p class="card-description">Practice numerical problems, understand debit/credit rules, and test your conceptual knowledge.</p>
+                <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <!-- Card 3: Business Studies -->
+            <a class="subject-card group" href="business.html">
+                <div class="flex items-center space-x-3 mb-2">
+                    <i data-lucide="briefcase" class="text-red-600 group-hover:text-white transition-colors h-6 w-6"></i>
+                    <h3 class="card-title">Business Studies</h3>
+                </div>
+                <p class="card-description">Master key concepts, case studies, and functional areas of business and management.</p>
+                <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <!-- Card 4: Mathematics -->
+            <a class="subject-card group" href="mathematics.html">
+                <div class="flex items-center space-x-3 mb-2">
+                    <i data-lucide="square-root" class="text-purple-600 group-hover:text-white transition-colors h-6 w-6"></i>
+                    <h3 class="card-title">Mathematics</h3>
+                </div>
+                <p class="card-description">Chapter-wise practice modules and master quizzes for sets, relations, calculus foundation, and statistics.</p>
+                <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+            <!-- Card 5: English -->
+            <a class="subject-card group" href="english.html">
+                <div class="flex items-center space-x-3 mb-2">
+                    <i data-lucide="book-open-text" class="text-orange-600 group-hover:text-white transition-colors h-6 w-6"></i>
+                    <h3 class="card-title">English</h3>
+                </div>
+                <p class="card-description">Grammar tests, reading comprehension practice, and literature analysis tools.</p>
+                <span class="card-link">Start Learning &rarr;</span>
+            </a>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-cbse-blue mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Dedicated to Student Success</small>
+        </div>
+    </footer>
+
+    <!-- Script to initialize Lucide icons -->
+    <script>
+        lucide.createIcons();
+
+        // Custom styling for navigation links using JS to apply a common class
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
+        });
+    </script>
+    
+    <!-- Custom CSS Styles (Tailwind Class Definitions) -->
+    <style>
+        .subject-card {
+            @apply block p-6 rounded-xl bg-white border border-gray-200 shadow-lg transition-all duration-300 transform hover:scale-[1.03] hover:shadow-2xl;
+        }
+        .subject-card:hover {
+             /* Apply a gradient or solid background on hover for a premium look */
+            background-color: theme('colors.cbse-blue'); 
+        }
+        .card-title {
+            @apply text-xl font-bold text-gray-800 group-hover:text-white transition-colors;
+        }
+        .card-description {
+            @apply text-sm text-gray-500 mt-2 mb-4 group-hover:text-gray-200 transition-colors;
+        }
+        .card-link {
+            @apply inline-block text-sm font-semibold text-accent-green group-hover:text-white border-b border-accent-green group-hover:border-white transition-colors;
+        }
+    </style>
 </body>
 </html>
