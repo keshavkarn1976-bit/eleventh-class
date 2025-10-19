@@ -89,8 +89,8 @@
             const [quizStatus, setQuizStatus] = useState('loading'); // 'loading' | 'active' | 'completed' | 'review'
             const [error, setError] = useState(null);
             
-            // State for Supabase client, initialized to null
-            const [supabaseClient, setSupabaseClient] = useState(null);
+            // State for Supabase client, initialized to undefined to properly gate the fetching effect
+            const [supabaseClient, setSupabaseClient] = useState(undefined);
 
             // --- 1. Client Initialization (Moved to useEffect for stability) ---
             useEffect(() => {
@@ -111,21 +111,22 @@
                     }
                 } else {
                     console.warn("Supabase configuration missing or invalid placeholder detected. Client remains null.");
-                    setSupabaseClient(null); // Ensure state is null if config is bad
+                    // Explicitly set to null when config is bad
+                    setSupabaseClient(null); 
                 }
             }, []); // Run once on mount
 
 
             // --- 2. Data Fetching (Supabase & Fallback) ---
             useEffect(() => {
-                // Only proceed if client state has been determined (i.e., not the initial 'null' state)
-                if (supabaseClient === null && quizStatus !== 'loading') return;
+                // If supabaseClient is still 'undefined', it means useEffect 1 hasn't finished running yet. Wait for it.
+                if (supabaseClient === undefined) return;
                 
                 const fetchQuestions = async () => {
                     setError(null);
                     setQuizStatus('loading');
                     
-                    // Check if the client was successfully initialized. If it's null, we fall back.
+                    // If the client is null, it means the config was bad (from useEffect 1). Fall back immediately.
                     if (!supabaseClient) {
                         const message = "Supabase client failed to initialize or configuration invalid. Loading mock data for demonstration.";
                         setError(message);
@@ -172,7 +173,7 @@
                     }
                 };
                 
-                // Fetch questions only once the client state is definitively set (either a client object or null)
+                // Fetch questions once the client state is definitively set (either a client object or null)
                 fetchQuestions();
 
             }, [supabaseClient]); // Rerun when client object is set/changes.
@@ -243,7 +244,7 @@
             }, [quizStatus, quizQuestions, userAnswers]);
 
 
-            // --- 3. RENDERING LOGIC (Unchanged) ---
+            // --- 3. RENDERING LOGIC (Updated to move error display) ---
 
             const renderTimer = () => (
                 <div className={`text-xl font-semibold p-2 rounded-lg transition-colors ${timerSeconds <= 300 ? 'bg-red-100 text-red-600 border border-red-300' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
@@ -259,6 +260,14 @@
 
                 return (
                     <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-4xl w-full mx-auto">
+                        {/* Display error prominently if quiz is active but there was a config/fetch error */}
+                        {error && (
+                            <div className="mb-6 bg-yellow-100 p-4 rounded-lg border border-yellow-300 text-yellow-800">
+                                <p className="font-semibold">Note:</p>
+                                <p>{error}</p>
+                            </div>
+                        )}
+                        
                         <h2 className="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-4">
                             Question {currentQuestionIndex + 1} of {quizQuestions.length}
                         </h2>
@@ -317,6 +326,12 @@
 
             const renderCompletionResults = () => (
                 <div className="bg-white p-12 rounded-xl shadow-2xl border-4 border-accent-green max-w-3xl w-full mx-auto text-center">
+                    {error && (
+                        <div className="mb-6 bg-yellow-100 p-4 rounded-lg border border-yellow-300 text-yellow-800">
+                            <p className="font-semibold">Data Warning:</p>
+                            <p>{error}</p>
+                        </div>
+                    )}
                     <h1 className="text-4xl font-extrabold text-accent-green mb-4">Quiz Completed!</h1>
                     <p className="text-xl text-gray-600 mb-8">Your results for the Demand chapter quiz are:</p>
 
@@ -336,6 +351,12 @@
 
             const renderReviewMode = () => (
                 <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-6xl w-full mx-auto">
+                    {error && (
+                        <div className="mb-6 bg-yellow-100 p-4 rounded-lg border border-yellow-300 text-yellow-800">
+                            <p className="font-semibold">Data Warning:</p>
+                            <p>{error}</p>
+                        </div>
+                    )}
                     <h1 className="text-3xl font-extrabold text-cbse-blue mb-6 border-b pb-4">
                         Quiz Review ({score}/{quizQuestions.length})
                     </h1>
@@ -401,7 +422,15 @@
                     content = (
                         <div className="text-center p-20">
                             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cbse-blue mx-auto mb-4"></div>
-                            <p className="text-xl text-gray-600">Loading 20 random questions from the database...</p>
+                            {/* Prominent error display in the loading state */}
+                            {error ? (
+                                <div className="mt-4 bg-red-100 p-4 rounded-lg border border-red-300">
+                                    <p className="text-xl font-semibold text-red-700">Database Connection Warning:</p>
+                                    <p className="text-lg text-red-600 mt-2">{error}</p>
+                                </div>
+                            ) : (
+                                <p className="text-xl text-gray-600">Loading 20 random questions from the database...</p>
+                            )}
                         </div>
                     );
                     break;
@@ -426,7 +455,7 @@
                             Economics: Demand Chapter Quiz
                         </h1>
                         {showTimer && renderTimer()}
-                        {error && <div className="text-red-500 bg-red-100 p-3 rounded-lg mt-4 w-full text-center">{error}</div>}
+                        {/* The general error display has been moved inside the content area for the 'loading' state */}
                     </header>
                     
                     <main className="pb-10">
