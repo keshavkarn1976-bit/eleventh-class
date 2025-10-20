@@ -223,10 +223,6 @@
                 let showSecondaryBox = secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
                 
                 if (q.question_type === 'A&R') {
-                    // *** FINAL A&R LABEL SWAP: ***
-                    // We want: Assertion (A) label with the content from question_text (primaryContent)
-                    // We want: Reasoning (R) label with the content from scenario_reason_text (secondaryContent)
-                    
                     // A is in question_text (primary content area)
                     primaryLabel = 'Assertion (A):'; 
                     primaryContent = primaryContent.replace(/\*\*Assertion \(A\)\:\*\* ?/i, '').trim(); 
@@ -338,7 +334,8 @@
                     </div>
                     <div className="space-y-4">
                         <button
-                            onClick={() => setQuizStatus('review')}
+                            // FIX: Ensure this button sets the status correctly to 'review'
+                            onClick={() => setQuizStatus('review')} 
                             className="w-full py-3 text-lg rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
                         >
                             Review All Answers
