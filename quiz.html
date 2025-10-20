@@ -34,7 +34,6 @@
             background-color: #fee2e2; /* Red 100 */
             border-color: #ef4444 !important; /* Red 500 */
             color: #991b1b; /* Red 800 */
-            /* text-decoration: line-through; - Removed for clarity in review */
         }
         .cbse-blue {
             background-color: #3b82f6; /* Blue 500 - used for selected options */
@@ -82,7 +81,13 @@
                     // This tells MathJax to look at the newly rendered content and process LaTeX
                     window.MathJax.typeset([contentRef.current]);
                 }
-            }, [content]); // Re-run whenever the content changes
+                // Cleanup function to clear MathJax state if component unmounts
+                return () => {
+                    if (window.MathJax) {
+                        window.MathJax.typesetClear([contentRef.current]);
+                    }
+                };
+            }, [content]); 
 
             return <div ref={contentRef} dangerouslySetInnerHTML={{ __html: content }} />;
         };
@@ -104,7 +109,8 @@
 
             const totalQuestions = quizQuestions.length;
             
-            // --- Fetching Logic (Unchanged) ---
+            // --- Handlers ---
+
             const setDifficulty = (difficulty) => {
                 setSelectedDifficulty(difficulty);
                 setQuizStatus('loading');
@@ -112,15 +118,13 @@
             };
 
             const fetchQuestions = async (difficultyValue) => {
-                // ... (Fetch questions logic remains the same) ...
                 const { data: rawQuestions, error: dbError } = await supabaseClient
                     .from('demand_mcqs_v2') 
-                    .select('id, q_no, question_type, scenario_reason_text, question_text, option_a, option_b, option_c, option_d, correct_answer_key')
+                    .select('id, q_no, question_type, scenario_reason_text, question_text, option_a, option_b, option_c, option_d, correct_answer_key, difficulty')
                     .eq('difficulty', difficultyValue) 
                     .order('q_no', { ascending: true }) 
                     .limit(20); 
                 
-                // ... (Error handling and data transformation remains the same) ...
                 if (dbError) {
                     console.error('Error fetching questions:', dbError);
                     setQuizStatus('initial');
@@ -151,7 +155,6 @@
                 setQuizStatus('active');
             };
 
-            // ... (handleOptionSelect, handleNavigation, handleSubmitQuiz logic remains the same) ...
             const handleOptionSelect = (optionIndex) => {
                 const currentQuestionId = quizQuestions[currentQuestionIndex].id;
                 setUserAnswers(prevAnswers => {
@@ -186,10 +189,28 @@
 
 
             // ----------------------------------------------------
-            // 3. RENDERING COMPONENTS
+            // 3. RENDERING COMPONENTS (DEFINED INSIDE APP)
             // ----------------------------------------------------
             
-            // --- B. Active Quiz Screen (Implementing MODIFICATIONS 1, 2, 3, 4) ---
+            const renderDifficultySelection = () => (
+                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
+                    <h1 className="text-4xl font-extrabold text-gray-900 mb-8">
+                        Select Quiz Difficulty
+                    </h1>
+                    <div className="space-y-4">
+                        {Object.keys(difficultyMap).map(key => (
+                            <button
+                                key={key}
+                                onClick={() => setDifficulty(key)}
+                                className="w-full py-4 text-xl rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-300 shadow-lg"
+                            >
+                                {key}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            );
+            
             const renderActiveQuiz = () => {
                 const q = quizQuestions[currentQuestionIndex];
                 if (!q) return <div className="text-center p-8 text-gray-500">Error: Question not found.</div>;
@@ -202,39 +223,26 @@
                 let secondaryLabel = 'Context:';      
                 let secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
                 
-                // Content for the secondary (context) box
                 let secondaryContent = q.scenario_reason_text;
-                
-                // --- MODIFICATION 1: Hide context for pure MCQs ---
+                // MODIFICATION 1: Hide context for pure MCQs or if content is null/N/A
                 let showSecondaryBox = q.question_type !== 'MCQ' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
                 
-                // --- MODIFICATION 2: Correct A&R Structure ---
+                // MODIFICATION 2: Correct A&R Structure
                 if (q.question_type === 'A&R') {
-                    // Scenario/Reasoning in DB (scenario_reason_text) is the Assertion (A) text
-                    // Question text in DB (question_text) is the Reasoning (R) text
-                    
-                    // We must display the Assertion FIRST (using the secondary box)
                     secondaryLabel = 'Assertion (A):'; 
                     secondaryContent = q.scenario_reason_text; 
-                    
-                    // Then display the Reasoning SECOND (using the primary question area)
                     primaryLabel = 'Reasoning (R):'; 
-                    // q.question_text will contain the Reasoning text
-                    
                     showSecondaryBox = true; 
                     secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
                 } 
                 
-                // --- MODIFICATION 3: Correct Case Structure ---
+                // MODIFICATION 3: Correct Case Structure
                 if (q.question_type === 'Case') {
-                    // We need to show the Question first, then the Case Data/Scenario
                     primaryLabel = 'Question:';
                     secondaryLabel = 'Case Data/Scenario:';
-                    // We intentionally do NOT show the secondary box here, we'll render it later.
-                    showSecondaryBox = false; // We will render the secondary content AFTER the question text
+                    showSecondaryBox = false; // We render it after the question text below
                     secondaryBoxStyle = 'bg-blue-50 border-blue-400';
                 }
-                // ----------------------------
 
                 return (
                     <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-4xl w-full mx-auto">
@@ -244,7 +252,7 @@
                             {q.question_type && <span className="text-lg font-normal ml-3 text-gray-500">({q.question_type})</span>}
                         </h2>
 
-                        {/* --- Secondary/Context Text (Assertion or Context for A&R) --- */}
+                        {/* Secondary/Context Text (Assertion or Context for A&R) */}
                         {showSecondaryBox && (q.question_type !== 'Case') && (
                             <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
                                 <p className="font-semibold text-sm text-gray-800 mb-2">
@@ -254,16 +262,15 @@
                                 <LatexContent content={secondaryContent} /> 
                             </div>
                         )}
-                        {/* ------------------------------------------------------ */}
                         
-                        {/* --- Primary Question Text (Question or Reasoning) --- */}
+                        {/* Primary Question Text (Question or Reasoning) */}
                         <p className="text-lg font-medium mb-4 text-gray-700">
                             <span className="font-semibold text-blue-600 mr-2">{primaryLabel}</span>
                             {/* MODIFICATION 4: Use LatexContent component */}
                             <LatexContent content={q.question_text} />
                         </p>
 
-                        {/* --- MODIFICATION 3: Case Data/Scenario comes AFTER the question --- */}
+                        {/* MODIFICATION 3 (Active Mode): Case Data/Scenario comes AFTER the question */}
                         {q.question_type === 'Case' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a' && (
                             <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
                                 <p className="font-semibold text-sm text-gray-800 mb-2">
@@ -273,7 +280,6 @@
                                 <LatexContent content={secondaryContent} /> 
                             </div>
                         )}
-                        {/* ------------------------------------------------------ */}
                         
                         <div className="space-y-4 pt-4 border-t border-gray-100">
                             {q.options.map((option, index) => {
@@ -326,7 +332,6 @@
                 );
             };
 
-            // ... (renderCompletionResults logic remains the same) ...
             const renderCompletionResults = () => (
                 <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Quiz Submitted!</h1>
@@ -351,8 +356,7 @@
                 </div>
             );
 
-
-            // --- D. Review Mode Screen (Implementing MODIFICATION 5) ---
+            // --- D. Review Mode Screen (MODIFICATION 5: Correct Answer Display) ---
             const renderReviewMode = () => (
                 <div className="bg-white p-8 rounded-xl shadow-2xl max-w-4xl w-full mx-auto">
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
@@ -379,10 +383,9 @@
                                 secondaryLabel = 'Case Data/Scenario:';
                                 primaryLabel = 'Question:'; 
                                 secondaryBoxStyle = 'bg-blue-50 border-blue-400';
-                                showSecondaryBox = false; // Rendered after the question
+                                showSecondaryBox = false; 
                             }
-                            // ------------------------------------
-
+                            
                             return (
                                 <div key={q.id} className="border p-6 rounded-xl shadow-sm">
                                     <h3 className="text-xl font-semibold mb-4 text-gray-800">
@@ -405,7 +408,7 @@
                                         <LatexContent content={q.question_text} />
                                     </p>
 
-                                    {/* MODIFICATION 3 (Review Mode): Case Data/Scenario comes AFTER the question */}
+                                    {/* Case Data/Scenario comes AFTER the question */}
                                     {q.question_type === 'Case' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a' && (
                                         <div className={`mb-4 p-3 border-l-4 ${secondaryBoxStyle}`}>
                                             <p className="font-semibold text-sm text-gray-700 mb-1">
@@ -420,61 +423,3 @@
                                             const optionKey = String.fromCharCode(65 + index);
                                             const isSelected = selectedIndex === index;
                                             const isCorrect = index === q.correct_answer_index;
-                                            
-                                            let className = 'w-full text-left p-3 rounded-lg border-2 text-gray-800';
-
-                                            if (isCorrect) {
-                                                // MODIFICATION 5: Highlight correct answer
-                                                className += ' correct-answer';
-                                            } else if (isSelected && !isCorrect) {
-                                                // MODIFICATION 5: Highlight user's incorrect answer
-                                                className += ' user-incorrect';
-                                            } else {
-                                                className += ' bg-gray-50 border-gray-200';
-                                            }
-
-                                            return (
-                                                <div key={index} className={className}>
-                                                    <span className="font-bold mr-3">{optionKey}.</span> 
-                                                    <LatexContent content={option} />
-                                                    {isCorrect && <span className="ml-3 text-sm font-bold">(Correct Answer)</span>}
-                                                    {isSelected && !isCorrect && <span className="ml-3 text-sm font-bold">(Your Answer)</span>}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    
-                    <button
-                        onClick={() => setQuizStatus('initial')}
-                        className="mt-10 py-3 px-8 text-lg rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition duration-300"
-                    >
-                        Start New Quiz
-                    </button>
-                </div>
-            );
-
-            // --- E. Main App Router ---
-            switch (quizStatus) {
-                case 'active':
-                    return renderActiveQuiz();
-                case 'completed':
-                    return renderCompletionResults();
-                case 'review':
-                    return renderReviewMode();
-                case 'loading':
-                    return <div className="text-center p-12 text-xl font-semibold text-blue-600">Loading questions...</div>;
-                default:
-                    return renderDifficultySelection();
-            }
-        };
-
-        // Initialize React app
-        ReactDOM.createRoot(document.getElementById('quiz-container')).render(<App />);
-
-    </script>
-</body>
-</html>
