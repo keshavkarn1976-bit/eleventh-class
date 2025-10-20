@@ -159,7 +159,14 @@
             appId: "1:192315627607:web:9f2e2794dc42aaa3352b12",
             measurementId: "G-3GXX6VXYT1"
         };
-        
+        window.__firebase_config = firebaseConfig;
+
+    // 3. Initialize Firebase using the standard object
+    const app = firebase.initializeApp(firebaseConfig);
+    // We initialize the specific service we need (Auth)
+    const auth = app.auth(); 
+
+      
         // Initialize Firebase
         const app = firebase.initializeApp(firebaseConfig);
         // We initialize the specific service we need (Auth)
