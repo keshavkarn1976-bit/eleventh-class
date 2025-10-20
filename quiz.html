@@ -8,6 +8,8 @@
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script src="config.js"></script> 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         .correct-answer {
@@ -36,27 +38,28 @@
         // ----------------------------------------------------
         // 1. SUPABASE CLIENT INITIALIZATION
         // ----------------------------------------------------
-       // Ensure these variable names (SUPABASE_URL and SUPABASE_ANON_KEY) 
-// EXACTLY match what you used in config.js (window.SUPABASE_ANON_KEY).
-const SUPABASE_URL = window.SUPABASE_URL; 
-const SUPABASE_KEY = window.SUPABASE_ANON_KEY; // <-- Use ANON_KEY here if config.js used it
+        // Reads from the global window object set by config.js
+        const SUPABASE_URL = window.SUPABASE_URL; 
+        const SUPABASE_KEY = window.SUPABASE_ANON_KEY; 
 
-// Defensive check to print the error you saw:
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-    console.error("Supabase configuration variables are missing or invalid. Check config.js file and window object definition.");
-    // Display an error message on the screen instead of letting the app fail silently
-    const renderFailure = () => (
-        <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
-            <h1 className="text-4xl font-extrabold text-red-600 mb-4">Configuration Error</h1>
-            <p className="text-xl text-gray-700">Quiz cannot start. Please check your Supabase URL and Key in config.js.</p>
-        </div>
-    );
-    // If you add the failure render, make sure the App component handles it gracefully.
-}
+        // Defensive check: Renders an error screen if config failed
+        if (!SUPABASE_URL || !SUPABASE_KEY) {
+            const renderConfigError = () => (
+                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
+                    <h1 className="text-4xl font-extrabold text-red-600 mb-4">Configuration Error 🛑</h1>
+                    <p className="text-xl text-gray-700">Quiz failed to load because Supabase credentials are missing.</p>
+                    <p className="text-sm text-gray-500 mt-4">Please check that 'config.js' is correctly defining window.SUPABASE_URL and window.SUPABASE_ANON_KEY.</p>
+                </div>
+            );
+            ReactDOM.createRoot(document.getElementById('quiz-container')).render(renderConfigError());
+            throw new Error("Supabase configuration missing. Check console for details.");
+        }
 
-const { createClient } = supabase;
-// This line will now execute only if the variables are successfully defined
-const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        const { useState, useEffect, useCallback, useMemo } = React;
+
         // ----------------------------------------------------
         // 2. STATE MANAGEMENT AND FETCHING
         // ----------------------------------------------------
@@ -89,7 +92,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
             const fetchQuestions = async (difficultyValue) => {
                 const { data: rawQuestions, error: dbError } = await supabaseClient
-                    // *** CRITICAL: Querying the new table and selecting all required fields ***
+                    // CRITICAL: Using the final table name and column list
                     .from('demand_mcqs_v2') 
                     .select('id, q_no, question_type, scenario_reason_text, question_text, option_a, option_b, option_c, option_d, correct_answer_key')
                     .eq('difficulty', difficultyValue) // Filter by difficulty
@@ -99,21 +102,21 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                 if (dbError) {
                     console.error('Error fetching questions:', dbError);
                     setQuizStatus('initial');
-                    alert('Error loading quiz data.');
+                    alert(`Error loading quiz data. RLS check: ${dbError.message}`);
                     return;
                 }
 
                 if (rawQuestions.length === 0) {
                      console.warn(`No questions found for difficulty: ${difficultyValue}`);
                      setQuizStatus('initial');
-                     alert('No questions found for this difficulty. Please check your Supabase data.');
+                     alert('No questions found for this difficulty. Check data/filters.');
                      return;
                 }
 
                 // Transform data for easier React use
                 const transformedQuestions = rawQuestions.map(q => ({
                     id: q.id,
-                    q_no: q.q_no, // Use DB 'id' as unique identifier, 'q_no' for ordering
+                    q_no: q.q_no, 
                     question_type: q.question_type,
                     scenario_reason_text: q.scenario_reason_text,
                     question_text: q.question_text,
@@ -139,12 +142,10 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                     };
 
                     if (existingIndex > -1) {
-                        // Update existing answer
                         return prevAnswers.map((a, index) => 
                             index === existingIndex ? newAnswer : a
                         );
                     } else {
-                        // Add new answer
                         return [...prevAnswers, newAnswer];
                     }
                 });
@@ -174,7 +175,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
             // 3. RENDERING COMPONENTS
             // ----------------------------------------------------
             
-            // --- A. Difficulty Selection Screen ---
             const renderDifficultySelection = () => (
                 <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-8">
@@ -194,7 +194,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                 </div>
             );
             
-            // --- B. Active Quiz Screen (Includes A&R/Case Logic) ---
             const renderActiveQuiz = () => {
                 const q = quizQuestions[currentQuestionIndex];
                 if (!q) return <div className="text-center p-8 text-gray-500">Error: Question not found.</div>;
@@ -202,7 +201,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                 const currentSelected = userAnswers.find(a => a.questionId === q.id)?.selectedOptionIndex;
                 const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
                 
-                // --- Dynamic Labels Setup (CRITICAL LOGIC) ---
+                // --- Dynamic Labels Setup (A&R and Case Logic) ---
                 let primaryLabel = 'Question:';       // Label for question_text
                 let secondaryLabel = 'Context:';      // Label for scenario_reason_text
                 let secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
@@ -228,7 +227,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                             {q.question_type && <span className="text-lg font-normal ml-3 text-gray-500">({q.question_type})</span>}
                         </h2>
 
-                        {/* --- Secondary/Context Text (Case Data / Assertion) --- */}
+                        {/* Secondary/Context Text (Case Data / Assertion) */}
                         {q.scenario_reason_text && (
                             <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
                                 <p className="font-semibold text-sm text-gray-800 mb-2">
@@ -237,9 +236,8 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                                 <p className="text-gray-700 whitespace-pre-wrap">{q.scenario_reason_text}</p>
                             </div>
                         )}
-                        {/* ------------------------------------------------------ */}
                         
-                        {/* --- Primary Question Text (Question / Reasoning) --- */}
+                        {/* Primary Question Text (Question / Reasoning) */}
                         <p className="text-lg font-medium mb-8 text-gray-700">
                             <span className="font-semibold text-blue-600 mr-2">{primaryLabel}</span>
                             {q.question_text}
@@ -294,7 +292,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                 );
             };
 
-            // --- C. Completion Results Screen ---
             const renderCompletionResults = () => (
                 <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Quiz Submitted!</h1>
@@ -319,7 +316,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                 </div>
             );
             
-            // --- D. Review Mode Screen (Shows ALL Answers) ---
             const renderReviewMode = () => (
                 <div className="bg-white p-8 rounded-xl shadow-2xl max-w-4xl w-full mx-auto">
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
@@ -330,7 +326,6 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
                         {quizQuestions.map((q, qIndex) => {
                             const userAns = userAnswers.find(a => a.questionId === q.id);
                             const selectedIndex = userAns ? userAns.selectedOptionIndex : -1;
-                            const isCorrect = selectedIndex === q.correct_answer_index;
                             
                             // --- Dynamic Labels Setup for Review ---
                             let primaryLabel = 'Question:';
@@ -423,6 +418,7 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
             }
         };
 
+        // Initialize React app
         ReactDOM.createRoot(document.getElementById('quiz-container')).render(<App />);
 
     </script>
