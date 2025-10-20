@@ -9,8 +9,20 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <script src="js/config.js"></script>
+    <script src="js/config.js"></script> 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script>
+        // Configure MathJax to process LaTeX enclosed in single dollar signs
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
     <style>
         .correct-answer {
             background-color: #d1fae5; /* Green 100 */
@@ -22,10 +34,14 @@
             background-color: #fee2e2; /* Red 100 */
             border-color: #ef4444 !important; /* Red 500 */
             color: #991b1b; /* Red 800 */
-            text-decoration: line-through;
+            /* text-decoration: line-through; - Removed for clarity in review */
         }
         .cbse-blue {
             background-color: #3b82f6; /* Blue 500 - used for selected options */
+        }
+        /* Ensure MathJax content is styled correctly */
+        .MathJax {
+            font-size: 100%;
         }
     </style>
 </head>
@@ -35,14 +51,12 @@
         </div>
 
     <script type="text/babel">
-        // ----------------------------------------------------
-        // 1. SUPABASE CLIENT INITIALIZATION
-        // ----------------------------------------------------
-        // Reads from the global window object set by config.js
+        const { createClient } = supabase;
+        
+        // Defensive check moved to the start of the script block
         const SUPABASE_URL = window.SUPABASE_URL; 
         const SUPABASE_KEY = window.SUPABASE_ANON_KEY; 
 
-        // Defensive check: Renders an error screen if config failed
         if (!SUPABASE_URL || !SUPABASE_KEY) {
             const renderConfigError = () => (
                 <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
@@ -51,18 +65,27 @@
                     <p className="text-sm text-gray-500 mt-4">Please check that 'config.js' is correctly defining window.SUPABASE_URL and window.SUPABASE_ANON_KEY.</p>
                 </div>
             );
+            // This is outside the main App component, so we manually render the error
             ReactDOM.createRoot(document.getElementById('quiz-container')).render(renderConfigError());
             throw new Error("Supabase configuration missing. Check console for details.");
         }
 
-        const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-
         const { useState, useEffect, useCallback, useMemo } = React;
+        
+        // Helper component to render LaTeX and re-render MathJax
+        const LatexContent = ({ content }) => {
+            const contentRef = React.useRef(null);
 
-        // ----------------------------------------------------
-        // 2. STATE MANAGEMENT AND FETCHING
-        // ----------------------------------------------------
+            React.useEffect(() => {
+                if (contentRef.current && window.MathJax) {
+                    // This tells MathJax to look at the newly rendered content and process LaTeX
+                    window.MathJax.typeset([contentRef.current]);
+                }
+            }, [content]); // Re-run whenever the content changes
+
+            return <div ref={contentRef} dangerouslySetInnerHTML={{ __html: content }} />;
+        };
 
         // Maps front-end buttons to database 'difficulty' values
         const difficultyMap = {
@@ -75,15 +98,13 @@
             const [selectedDifficulty, setSelectedDifficulty] = useState(null);
             const [quizQuestions, setQuizQuestions] = useState([]);
             const [userAnswers, setUserAnswers] = useState([]);
-            // 'initial' | 'loading' | 'active' | 'completed' | 'review'
             const [quizStatus, setQuizStatus] = useState('initial'); 
             const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
             const [score, setScore] = useState(0);
 
             const totalQuestions = quizQuestions.length;
             
-            // --- Handlers ---
-
+            // --- Fetching Logic (Unchanged) ---
             const setDifficulty = (difficulty) => {
                 setSelectedDifficulty(difficulty);
                 setQuizStatus('loading');
@@ -91,14 +112,15 @@
             };
 
             const fetchQuestions = async (difficultyValue) => {
+                // ... (Fetch questions logic remains the same) ...
                 const { data: rawQuestions, error: dbError } = await supabaseClient
-                    // CRITICAL: Using the final table name and column list
                     .from('demand_mcqs_v2') 
                     .select('id, q_no, question_type, scenario_reason_text, question_text, option_a, option_b, option_c, option_d, correct_answer_key')
-                    .eq('difficulty', difficultyValue) // Filter by difficulty
-                    .order('q_no', { ascending: true }) // Ensure ordering
-                    .limit(20); // Limit to 20 questions
-
+                    .eq('difficulty', difficultyValue) 
+                    .order('q_no', { ascending: true }) 
+                    .limit(20); 
+                
+                // ... (Error handling and data transformation remains the same) ...
                 if (dbError) {
                     console.error('Error fetching questions:', dbError);
                     setQuizStatus('initial');
@@ -113,14 +135,12 @@
                      return;
                 }
 
-                // Transform data for easier React use
                 const transformedQuestions = rawQuestions.map(q => ({
                     id: q.id,
                     q_no: q.q_no, 
                     question_type: q.question_type,
                     scenario_reason_text: q.scenario_reason_text,
                     question_text: q.question_text,
-                    // Filter out null options
                     options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(o => o),
                     correct_answer_index: q.correct_answer_key ? q.correct_answer_key.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0) : null
                 }));
@@ -131,20 +151,14 @@
                 setQuizStatus('active');
             };
 
+            // ... (handleOptionSelect, handleNavigation, handleSubmitQuiz logic remains the same) ...
             const handleOptionSelect = (optionIndex) => {
                 const currentQuestionId = quizQuestions[currentQuestionIndex].id;
-
                 setUserAnswers(prevAnswers => {
                     const existingIndex = prevAnswers.findIndex(a => a.questionId === currentQuestionId);
-                    const newAnswer = {
-                        questionId: currentQuestionId,
-                        selectedOptionIndex: optionIndex
-                    };
-
+                    const newAnswer = { questionId: currentQuestionId, selectedOptionIndex: optionIndex };
                     if (existingIndex > -1) {
-                        return prevAnswers.map((a, index) => 
-                            index === existingIndex ? newAnswer : a
-                        );
+                        return prevAnswers.map((a, index) => index === existingIndex ? newAnswer : a);
                     } else {
                         return [...prevAnswers, newAnswer];
                     }
@@ -166,34 +180,16 @@
                         finalScore++;
                     }
                 });
-
                 setScore(finalScore);
                 setQuizStatus('completed');
             };
-            
+
+
             // ----------------------------------------------------
             // 3. RENDERING COMPONENTS
             // ----------------------------------------------------
             
-            const renderDifficultySelection = () => (
-                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-8">
-                        Select Quiz Difficulty
-                    </h1>
-                    <div className="space-y-4">
-                        {Object.keys(difficultyMap).map(key => (
-                            <button
-                                key={key}
-                                onClick={() => setDifficulty(key)}
-                                className="w-full py-4 text-xl rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-300 shadow-lg"
-                            >
-                                {key}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            );
-            
+            // --- B. Active Quiz Screen (Implementing MODIFICATIONS 1, 2, 3, 4) ---
             const renderActiveQuiz = () => {
                 const q = quizQuestions[currentQuestionIndex];
                 if (!q) return <div className="text-center p-8 text-gray-500">Error: Question not found.</div>;
@@ -201,21 +197,42 @@
                 const currentSelected = userAnswers.find(a => a.questionId === q.id)?.selectedOptionIndex;
                 const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
                 
-                // --- Dynamic Labels Setup (A&R and Case Logic) ---
-                let primaryLabel = 'Question:';       // Label for question_text
-                let secondaryLabel = 'Context:';      // Label for scenario_reason_text
+                // --- Dynamic Labels Setup ---
+                let primaryLabel = 'Question:';       
+                let secondaryLabel = 'Context:';      
                 let secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
-            
+                
+                // Content for the secondary (context) box
+                let secondaryContent = q.scenario_reason_text;
+                
+                // --- MODIFICATION 1: Hide context for pure MCQs ---
+                let showSecondaryBox = q.question_type !== 'MCQ' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
+                
+                // --- MODIFICATION 2: Correct A&R Structure ---
                 if (q.question_type === 'A&R') {
-                    // Scenario/Reasoning is the Assertion, Question_text is the Reasoning
+                    // Scenario/Reasoning in DB (scenario_reason_text) is the Assertion (A) text
+                    // Question text in DB (question_text) is the Reasoning (R) text
+                    
+                    // We must display the Assertion FIRST (using the secondary box)
                     secondaryLabel = 'Assertion (A):'; 
-                    primaryLabel = 'Reasoning (R):';   
+                    secondaryContent = q.scenario_reason_text; 
+                    
+                    // Then display the Reasoning SECOND (using the primary question area)
+                    primaryLabel = 'Reasoning (R):'; 
+                    // q.question_text will contain the Reasoning text
+                    
+                    showSecondaryBox = true; 
                     secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
-                } else if (q.question_type === 'Case') {
-                    // Scenario/Reasoning is the Case Data, Question_text is the Question
+                } 
+                
+                // --- MODIFICATION 3: Correct Case Structure ---
+                if (q.question_type === 'Case') {
+                    // We need to show the Question first, then the Case Data/Scenario
+                    primaryLabel = 'Question:';
                     secondaryLabel = 'Case Data/Scenario:';
-                    primaryLabel = 'Question:'; 
-                    secondaryBoxStyle = 'bg-blue-50 border-blue-400'; 
+                    // We intentionally do NOT show the secondary box here, we'll render it later.
+                    showSecondaryBox = false; // We will render the secondary content AFTER the question text
+                    secondaryBoxStyle = 'bg-blue-50 border-blue-400';
                 }
                 // ----------------------------
 
@@ -227,23 +244,38 @@
                             {q.question_type && <span className="text-lg font-normal ml-3 text-gray-500">({q.question_type})</span>}
                         </h2>
 
-                        {/* Secondary/Context Text (Case Data / Assertion) */}
-                        {q.scenario_reason_text && (
+                        {/* --- Secondary/Context Text (Assertion or Context for A&R) --- */}
+                        {showSecondaryBox && (q.question_type !== 'Case') && (
                             <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
                                 <p className="font-semibold text-sm text-gray-800 mb-2">
                                     {secondaryLabel}
                                 </p>
-                                <p className="text-gray-700 whitespace-pre-wrap">{q.scenario_reason_text}</p>
+                                {/* MODIFICATION 4: Use LatexContent component */}
+                                <LatexContent content={secondaryContent} /> 
                             </div>
                         )}
+                        {/* ------------------------------------------------------ */}
                         
-                        {/* Primary Question Text (Question / Reasoning) */}
-                        <p className="text-lg font-medium mb-8 text-gray-700">
+                        {/* --- Primary Question Text (Question or Reasoning) --- */}
+                        <p className="text-lg font-medium mb-4 text-gray-700">
                             <span className="font-semibold text-blue-600 mr-2">{primaryLabel}</span>
-                            {q.question_text}
+                            {/* MODIFICATION 4: Use LatexContent component */}
+                            <LatexContent content={q.question_text} />
                         </p>
+
+                        {/* --- MODIFICATION 3: Case Data/Scenario comes AFTER the question --- */}
+                        {q.question_type === 'Case' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a' && (
+                            <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
+                                <p className="font-semibold text-sm text-gray-800 mb-2">
+                                    {secondaryLabel}
+                                </p>
+                                {/* MODIFICATION 4: Use LatexContent component */}
+                                <LatexContent content={secondaryContent} /> 
+                            </div>
+                        )}
+                        {/* ------------------------------------------------------ */}
                         
-                        <div className="space-y-4">
+                        <div className="space-y-4 pt-4 border-t border-gray-100">
                             {q.options.map((option, index) => {
                                 const isSelected = currentSelected === index;
                                 return (
@@ -257,7 +289,9 @@
                                             }
                                         `}
                                     >
-                                        <span className="font-bold mr-3">{String.fromCharCode(65 + index)}.</span> {option}
+                                        <span className="font-bold mr-3">{String.fromCharCode(65 + index)}.</span> 
+                                        {/* MODIFICATION 4: Use LatexContent component for options */}
+                                        <LatexContent content={option} />
                                     </button>
                                 );
                             })}
@@ -292,6 +326,7 @@
                 );
             };
 
+            // ... (renderCompletionResults logic remains the same) ...
             const renderCompletionResults = () => (
                 <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Quiz Submitted!</h1>
@@ -315,7 +350,9 @@
                     </div>
                 </div>
             );
-            
+
+
+            // --- D. Review Mode Screen (Implementing MODIFICATION 5) ---
             const renderReviewMode = () => (
                 <div className="bg-white p-8 rounded-xl shadow-2xl max-w-4xl w-full mx-auto">
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
@@ -331,14 +368,18 @@
                             let primaryLabel = 'Question:';
                             let secondaryLabel = 'Context:';
                             let secondaryBoxStyle = 'bg-gray-100 border-gray-300';
+                            let secondaryContent = q.scenario_reason_text;
+                            let showSecondaryBox = q.question_type !== 'MCQ' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
                         
                             if (q.question_type === 'A&R') {
                                 secondaryLabel = 'Assertion (A):'; 
                                 primaryLabel = 'Reasoning (R):';   
+                                showSecondaryBox = true;
                             } else if (q.question_type === 'Case') {
                                 secondaryLabel = 'Case Data/Scenario:';
                                 primaryLabel = 'Question:'; 
                                 secondaryBoxStyle = 'bg-blue-50 border-blue-400';
+                                showSecondaryBox = false; // Rendered after the question
                             }
                             // ------------------------------------
 
@@ -348,23 +389,33 @@
                                         Q{qIndex + 1}. ({q.question_type})
                                     </h3>
                                     
-                                    {/* Secondary/Context Text (Case Data / Assertion) */}
-                                    {q.scenario_reason_text && (
+                                    {/* Secondary/Context Text (Assertion or Context for A&R) */}
+                                    {showSecondaryBox && (q.question_type !== 'Case') && (
                                         <div className={`mb-4 p-3 border-l-4 ${secondaryBoxStyle}`}>
                                             <p className="font-semibold text-sm text-gray-700 mb-1">
                                                 {secondaryLabel}
                                             </p>
-                                            <p className="text-gray-700 whitespace-pre-wrap">{q.scenario_reason_text}</p>
+                                            <LatexContent content={secondaryContent} />
                                         </div>
                                     )}
 
                                     {/* Primary Question Text (Question / Reasoning) */}
-                                    <p className="text-lg mb-6 text-gray-700">
+                                    <p className="text-lg mb-4 text-gray-700">
                                         <span className="font-bold text-blue-600 mr-2">{primaryLabel}</span>
-                                        {q.question_text}
+                                        <LatexContent content={q.question_text} />
                                     </p>
 
-                                    <div className="space-y-2">
+                                    {/* MODIFICATION 3 (Review Mode): Case Data/Scenario comes AFTER the question */}
+                                    {q.question_type === 'Case' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a' && (
+                                        <div className={`mb-4 p-3 border-l-4 ${secondaryBoxStyle}`}>
+                                            <p className="font-semibold text-sm text-gray-700 mb-1">
+                                                {secondaryLabel}
+                                            </p>
+                                            <LatexContent content={secondaryContent} />
+                                        </div>
+                                    )}
+                                    
+                                    <div className="space-y-2 pt-4 border-t border-gray-100">
                                         {q.options.map((option, index) => {
                                             const optionKey = String.fromCharCode(65 + index);
                                             const isSelected = selectedIndex === index;
@@ -373,8 +424,10 @@
                                             let className = 'w-full text-left p-3 rounded-lg border-2 text-gray-800';
 
                                             if (isCorrect) {
+                                                // MODIFICATION 5: Highlight correct answer
                                                 className += ' correct-answer';
                                             } else if (isSelected && !isCorrect) {
+                                                // MODIFICATION 5: Highlight user's incorrect answer
                                                 className += ' user-incorrect';
                                             } else {
                                                 className += ' bg-gray-50 border-gray-200';
@@ -382,8 +435,9 @@
 
                                             return (
                                                 <div key={index} className={className}>
-                                                    <span className="font-bold mr-3">{optionKey}.</span> {option}
-                                                    {isCorrect && <span className="ml-3 text-sm font-bold">(Correct)</span>}
+                                                    <span className="font-bold mr-3">{optionKey}.</span> 
+                                                    <LatexContent content={option} />
+                                                    {isCorrect && <span className="ml-3 text-sm font-bold">(Correct Answer)</span>}
                                                     {isSelected && !isCorrect && <span className="ml-3 text-sm font-bold">(Your Answer)</span>}
                                                 </div>
                                             );
