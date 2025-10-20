@@ -10,7 +10,7 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
-        <script type="module">
+                <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -26,16 +26,14 @@
         const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
         const firebaseConfig = JSON.parse(firebaseConfigRaw);
 
-        // --- NEW CHECK HERE ---
         const isConfigEmpty = Object.keys(firebaseConfig).length === 0;
 
         if (!isConfigEmpty) {
              const app = initializeApp(firebaseConfig);
              window.db = getFirestore(app);
              window.auth = getAuth(app);
-             window.firebaseError = null; // Clear any previous error
+             window.firebaseError = null;
 
-             // Set up auth logic and make sure db/auth is available globally
              const setupAuth = async () => {
                  setLogLevel('Debug');
                  const auth = window.auth;
@@ -46,7 +44,6 @@
                      await signInAnonymously(auth);
                  }
 
-                 // Wait for auth to be ready before mounting React app
                  onAuthStateChanged(auth, (user) => {
                      window.userId = user?.uid || crypto.randomUUID();
                      window.isAuthReady = true;
@@ -54,7 +51,6 @@
              };
              setupAuth();
         } else {
-             // Fallback for environments without Firebase config
              window.db = null;
              window.auth = null;
              window.userId = crypto.randomUUID();
@@ -213,38 +209,45 @@
                         } catch (e) {
                             console.error("Error fetching offset from Firestore, using default 0. This might be a rule failure.", e);
                             setError(prev => (prev ? prev + ' | ' : '') + "Firestore read failed (check rules/connection). Using offset 0.");
-                            // Continue with offset 0
                         }
                     } else if (!isFirestoreWorking && !window.firebaseError) {
-                         // This catches cases where config was loaded but DB connection still failed
                          setError(prev => (prev ? prev + ' | ' : '') + "Firestore service failed to initialize. Using offset 0.");
                     }
 
 
-                    // --- 2. FETCH SEQUENTIAL BLOCK FROM SUPABASE ---
+                    // --- 2. FETCH SEQUENTIAL BLOCK FROM SUPABASE (CORRECTED QUERY) ---
                     if (isSupabaseWorking) {
                         try {
-                            const { data: allQuestions, error: dbError } = await supabaseClient
+                            // CORRECTION: Use the column names from your actual schema
+                            const { data: rawQuestions, error: dbError } = await supabaseClient
                                 .from('demand_mcqs') 
-                                .select('q_no, question_text, options, correct_answer_index') 
+                                .select('q_no, question_text, option_a, option_b, option_c, option_d, correct_answer_key') 
                                 .order('q_no', { ascending: true })
                                 .limit(TOTAL_QUESTIONS_TO_PULL)
                                 .range(currentOffset, currentOffset + TOTAL_QUESTIONS_TO_PULL - 1); 
 
                             if (dbError) throw dbError;
 
-                            const selectedQuestions = allQuestions || [];
-                            
-                            if (selectedQuestions.length === 0) {
+                            if (rawQuestions.length === 0) {
                                  console.warn("Supabase returned no questions. Falling back to mock data.");
                                  const mockBlock = MOCK_DEMAND_MCQ.slice(currentOffset, currentOffset + TOTAL_QUESTIONS_TO_PULL);
                                  setQuizQuestions(mockBlock);
                                  setUserAnswers(mockBlock.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
                                  setError(prev => (prev ? prev + ' | ' : '') + `Supabase returned no results for offset ${currentOffset}. Using mock data.`);
                             } else {
-                                setQuizQuestions(selectedQuestions);
-                                setUserAnswers(selectedQuestions.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
-                                setError(prev => prev === window.firebaseError ? window.firebaseError : null); // Only keep the Firebase error if it exists
+                                // CORRECTION: Transform the data to the format the React state expects
+                                const transformedQuestions = rawQuestions.map(q => ({
+                                    id: q.q_no,
+                                    question_text: q.question_text,
+                                    // Combine option columns into an array for the 'options' property
+                                    options: [q.option_a, q.option_b, q.option_c, q.option_d],
+                                    // Convert 'A', 'B', 'C', 'D' key to 0, 1, 2, 3 index
+                                    correct_answer_index: q.correct_answer_key ? q.correct_answer_key.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0) : null
+                                }));
+                                
+                                setQuizQuestions(transformedQuestions);
+                                setUserAnswers(transformedQuestions.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
+                                setError(prev => prev === window.firebaseError ? window.firebaseError : null); 
                             }
                             
                             // --- 3. CALCULATE AND SAVE THE NEXT OFFSET FOR NEXT TIME ---
@@ -263,7 +266,7 @@
                                         lastUpdated: new Date().toISOString()
                                     }, { merge: true }); 
                                     console.log(`Saved next offset: ${nextOffset} for user ${userId}.`);
-                                    setError(prev => prev === window.firebaseError ? window.firebaseError : null); // If save succeeded, clear Supabase/Firestore error
+                                    setError(prev => prev === window.firebaseError ? window.firebaseError : null); 
                                 } catch (e) {
                                     console.error("Error saving offset to Firestore, write failed (check rules/connection):", e);
                                     setError(prev => (prev ? prev + ' | ' : '') + "Firestore write failed (check rules/connection).");
@@ -311,7 +314,7 @@
                 }
             }, [quizStatus, timerSeconds]);
 
-            // --- Handlers, Computed Values, Rendering Logic (Mostly Unchanged) ---
+            // --- Handlers, Computed Values, Rendering Logic (Unchanged) ---
 
             const handleOptionSelect = (optionIndex) => {
                 if (quizStatus !== 'active' || !quizQuestions.length) return;
@@ -364,7 +367,7 @@
             }, [quizStatus, quizQuestions, userAnswers]);
 
 
-            // --- RENDERING LOGIC ---
+            // --- RENDERING LOGIC (Unchanged) ---
 
             const renderTimer = () => (
                 <div className={`text-xl font-semibold p-2 rounded-lg transition-colors ${timerSeconds <= 300 ? 'bg-red-100 text-red-600 border border-red-300' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
