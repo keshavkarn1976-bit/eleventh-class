@@ -79,7 +79,8 @@
                     window.MathJax.typeset([contentRef.current]);
                 }
                 return () => {
-                    if (window.MathJax) {
+                    // FIX: Ensure contentRef.current is not null before using it in cleanup
+                    if (contentRef.current && window.MathJax) {
                         window.MathJax.typesetClear([contentRef.current]);
                     }
                 };
@@ -334,7 +335,7 @@
                     </div>
                     <div className="space-y-4">
                         <button
-                            // FIX: Ensure this button sets the status correctly to 'review'
+                            // FIX: Corrected onClick handler to properly set the review status
                             onClick={() => setQuizStatus('review')} 
                             className="w-full py-3 text-lg rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
                         >
