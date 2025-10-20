@@ -183,7 +183,7 @@
 
 
             // ----------------------------------------------------
-            // 3. RENDERING COMPONENTS
+            // 3. RENDERING COMPONENTS (ACTIVE MODE)
             // ----------------------------------------------------
             
             const renderDifficultySelection = () => (
@@ -212,27 +212,39 @@
                 const currentSelected = userAnswers.find(a => a.questionId === q.id)?.selectedOptionIndex;
                 const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
                 
-                // --- Dynamic Labels Setup ---
+                // --- Dynamic Content Setup ---
                 let primaryLabel = 'Question:';       
                 let secondaryLabel = 'Context:';      
                 let secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
                 
                 let secondaryContent = q.scenario_reason_text;
-                let showSecondaryBox = q.question_type !== 'MCQ' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
+                let primaryContent = q.question_text; 
+
+                let showSecondaryBox = secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
                 
                 if (q.question_type === 'A&R') {
-                    secondaryLabel = 'Assertion (A):'; 
-                    secondaryContent = q.scenario_reason_text; 
+                    // R is in question_text (primary content)
                     primaryLabel = 'Reasoning (R):'; 
-                    showSecondaryBox = true; 
+                    primaryContent = primaryContent.replace(/\*\*Assertion \(A\)\:\*\* ?/i, '').trim(); 
+                    
+                    // A is in scenario_reason_text (secondary content)
+                    secondaryLabel = 'Assertion (A):'; 
+                    secondaryContent = secondaryContent.replace(/\*\*Reason \(R\)\:\*\* ?/i, '').trim(); 
+                    
                     secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
+                    showSecondaryBox = true; 
                 } 
                 
                 if (q.question_type === 'Case') {
                     primaryLabel = 'Question:';
                     secondaryLabel = 'Case Data/Scenario:';
-                    showSecondaryBox = false; 
                     secondaryBoxStyle = 'bg-blue-50 border-blue-400';
+                    showSecondaryBox = true;
+                }
+                
+                // HIDE the secondary box if it's a pure MCQ
+                if (q.question_type === 'MCQ') {
+                    showSecondaryBox = false;
                 }
 
                 return (
@@ -243,24 +255,14 @@
                             {q.question_type && <span className="text-lg font-normal ml-3 text-gray-500">({q.question_type})</span>}
                         </h2>
 
-                        {/* Secondary/Context Text (Assertion or Context for A&R) */}
-                        {showSecondaryBox && (q.question_type !== 'Case') && (
-                            <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
-                                <p className="font-semibold text-sm text-gray-800 mb-2">
-                                    {secondaryLabel}
-                                </p>
-                                <LatexContent content={secondaryContent} /> 
-                            </div>
-                        )}
-                        
-                        {/* Primary Question Text (Question or Reasoning) */}
+                        {/* --- 1. PRIMARY QUESTION/REASONING TEXT (question_text) --- */}
                         <p className="text-lg font-medium mb-4 text-gray-700">
                             <span className="font-semibold text-blue-600 mr-2">{primaryLabel}</span>
-                            <LatexContent content={q.question_text} />
+                            <LatexContent content={primaryContent} />
                         </p>
-
-                        {/* Case Data/Scenario comes AFTER the question */}
-                        {q.question_type === 'Case' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a' && (
+                        
+                        {/* --- 2. SECONDARY CONTEXT/ASSERTION/CASE DATA BOX (scenario_reason_text) --- */}
+                        {showSecondaryBox && (
                             <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
                                 <p className="font-semibold text-sm text-gray-800 mb-2">
                                     {secondaryLabel}
@@ -319,6 +321,10 @@
                 );
             };
 
+            // ----------------------------------------------------
+            // 4. RENDERING COMPONENTS (COMPLETION/REVIEW)
+            // ----------------------------------------------------
+
             const renderCompletionResults = () => (
                 <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
                     <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Quiz Submitted!</h1>
@@ -354,22 +360,34 @@
                             const userAns = userAnswers.find(a => a.questionId === q.id);
                             const selectedIndex = userAns ? userAns.selectedOptionIndex : -1;
                             
-                            // --- Dynamic Labels Setup for Review ---
+                            // --- Dynamic Content Setup for Review ---
                             let primaryLabel = 'Question:';
                             let secondaryLabel = 'Context:';
                             let secondaryBoxStyle = 'bg-gray-100 border-gray-300';
+                            
                             let secondaryContent = q.scenario_reason_text;
-                            let showSecondaryBox = q.question_type !== 'MCQ' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
+                            let primaryContent = q.question_text; 
+                            
+                            let showSecondaryBox = secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
                         
                             if (q.question_type === 'A&R') {
+                                // R is in question_text (primary content)
+                                primaryLabel = 'Reasoning (R):'; 
+                                primaryContent = primaryContent.replace(/\*\*Assertion \(A\)\:\*\* ?/i, '').trim(); 
+                                
+                                // A is in scenario_reason_text (secondary content)
                                 secondaryLabel = 'Assertion (A):'; 
-                                primaryLabel = 'Reasoning (R):';   
-                                showSecondaryBox = true;
+                                secondaryContent = secondaryContent.replace(/\*\*Reason \(R\)\:\*\* ?/i, '').trim(); 
+                                
                             } else if (q.question_type === 'Case') {
                                 secondaryLabel = 'Case Data/Scenario:';
                                 primaryLabel = 'Question:'; 
                                 secondaryBoxStyle = 'bg-blue-50 border-blue-400';
-                                showSecondaryBox = false; 
+                            }
+                            
+                            // HIDE the secondary box if it's a pure MCQ
+                            if (q.question_type === 'MCQ') {
+                                showSecondaryBox = false;
                             }
                             
                             return (
@@ -378,24 +396,14 @@
                                         Q{qIndex + 1}. ({q.question_type})
                                     </h3>
                                     
-                                    {/* Secondary/Context Text (Assertion or Context for A&R) */}
-                                    {showSecondaryBox && (q.question_type !== 'Case') && (
-                                        <div className={`mb-4 p-3 border-l-4 ${secondaryBoxStyle}`}>
-                                            <p className="font-semibold text-sm text-gray-700 mb-1">
-                                                {secondaryLabel}
-                                            </p>
-                                            <LatexContent content={secondaryContent} />
-                                        </div>
-                                    )}
-
-                                    {/* Primary Question Text (Question / Reasoning) */}
+                                    {/* --- 1. PRIMARY QUESTION/REASONING TEXT (question_text) --- */}
                                     <p className="text-lg mb-4 text-gray-700">
                                         <span className="font-bold text-blue-600 mr-2">{primaryLabel}</span>
-                                        <LatexContent content={q.question_text} />
+                                        <LatexContent content={primaryContent} />
                                     </p>
 
-                                    {/* Case Data/Scenario comes AFTER the question */}
-                                    {q.question_type === 'Case' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a' && (
+                                    {/* --- 2. SECONDARY CONTEXT/ASSERTION/CASE DATA BOX (scenario_reason_text) --- */}
+                                    {showSecondaryBox && (
                                         <div className={`mb-4 p-3 border-l-4 ${secondaryBoxStyle}`}>
                                             <p className="font-semibold text-sm text-gray-700 mb-1">
                                                 {secondaryLabel}
@@ -444,7 +452,7 @@
                 </div>
             );
 
-            // --- E. Main App Router ---
+            // --- 5. Main App Router ---
             switch (quizStatus) {
                 case 'active':
                     return renderActiveQuiz();
