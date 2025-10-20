@@ -89,8 +89,7 @@
                 <a href="english.html" class="nav-link protected-link">English</a>
                 <a href="accountancy.html" class="nav-link protected-link">Accountancy</a>
                 <a href="business.html" class="nav-link protected-link">Business Studies</a>
-                <a href="economics.html" class="nav-link protected-link">Economics</a>
-                <a href="mathematics.html" class="nav-link protected-link">Mathematics</a>
+                <a href="economics.html" class="nav-link">Economics</a> <a href="mathematics.html" class="nav-link protected-link">Mathematics</a>
             </nav>
         </div>
     </header>
@@ -110,7 +109,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             
-            <a class="subject-card group protected-link" href="economics.html">
+            <a class="subject-card group" href="economics.html">
                 <div class="flex items-center space-x-3 mb-2">
                     <i data-lucide="line-chart" class="text-accent-gold group-hover:text-white transition-colors h-6 w-6"></i>
                     <h3 class="card-title">Economics</h3>
@@ -183,9 +182,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
         });
-        
-        // Removed all Firebase/Authentication code as the buttons were removed.
-        // The protected-link class remains on the links, implying a general login requirement.
     </script>
 </body>
 </html>
