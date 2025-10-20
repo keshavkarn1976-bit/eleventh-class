@@ -36,17 +36,26 @@
         // ----------------------------------------------------
         // 1. SUPABASE CLIENT INITIALIZATION
         // ----------------------------------------------------
-       // Accessing credentials from the global window object set by config.js
+       // Ensure these variable names (SUPABASE_URL and SUPABASE_ANON_KEY) 
+// EXACTLY match what you used in config.js (window.SUPABASE_ANON_KEY).
 const SUPABASE_URL = window.SUPABASE_URL; 
-const SUPABASE_KEY = window.SUPABASE_ANON_KEY; 
+const SUPABASE_KEY = window.SUPABASE_ANON_KEY; // <-- Use ANON_KEY here if config.js used it
 
-// Validate that the variables exist before creating the client
+// Defensive check to print the error you saw:
 if (!SUPABASE_URL || !SUPABASE_KEY) {
     console.error("Supabase configuration variables are missing or invalid. Check config.js file and window object definition.");
-    // Exit or display a failure message if necessary
+    // Display an error message on the screen instead of letting the app fail silently
+    const renderFailure = () => (
+        <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
+            <h1 className="text-4xl font-extrabold text-red-600 mb-4">Configuration Error</h1>
+            <p className="text-xl text-gray-700">Quiz cannot start. Please check your Supabase URL and Key in config.js.</p>
+        </div>
+    );
+    // If you add the failure render, make sure the App component handles it gracefully.
 }
 
 const { createClient } = supabase;
+// This line will now execute only if the variables are successfully defined
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
         // ----------------------------------------------------
         // 2. STATE MANAGEMENT AND FETCHING
