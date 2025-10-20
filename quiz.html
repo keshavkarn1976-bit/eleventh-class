@@ -1,415 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Demand Chapter Quiz — Economics</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Economics Quiz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script>
-        // Configuration snippet from your Firebase console, converted to global variables.
-        window.__app_id = "eleventhexam-f0fab"; 
-        window.__firebase_config = JSON.stringify({
-            apiKey: "AIzaSyCFkuTUao-HGQhX438cVOUvUiS3kT2m7Os",
-            authDomain: "eleventhexam-f0fab.firebaseapp.com",
-            projectId: "eleventhexam-f0fab",
-            storageBucket: "eleventhexam-f0fab.firebasestorage.app",
-            messagingSenderId: "192315627607",
-            appId: "1:192315627607:web:9f2e2794dc42aaa3352b12",
-        });
-        window.__initial_auth_token = "";
-    </script>
-    
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // Setting up global access for the React component
-        window.firebaseDependencies = {
-            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, 
-            onAuthStateChanged, getFirestore, doc, getDoc, setDoc, setLogLevel
-        };
-
-        // Initialize Firebase Globals
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfigRaw = typeof __firebase_config !== 'undefined' ? __firebase_config : '{}';
-        const firebaseConfig = JSON.parse(firebaseConfigRaw);
-
-        const isConfigEmpty = Object.keys(firebaseConfig).length === 0;
-
-        if (!isConfigEmpty) {
-             const app = initializeApp(firebaseConfig);
-             window.db = getFirestore(app);
-             window.auth = getAuth(app);
-             window.firebaseError = null;
-
-             const setupAuth = async () => {
-                 setLogLevel('Debug');
-                 const auth = window.auth;
-
-                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                     await signInWithCustomToken(auth, __initial_auth_token);
-                 } else {
-                     await signInAnonymously(auth);
-                 }
-
-                 onAuthStateChanged(auth, (user) => {
-                     window.userId = user?.uid || crypto.randomUUID();
-                     window.isAuthReady = true;
-                 });
-             };
-             setupAuth();
-        } else {
-             window.db = null;
-             window.auth = null;
-             window.userId = crypto.randomUUID();
-             window.isAuthReady = true;
-             window.firebaseError = "FATAL: Firebase configuration (__firebase_config) is missing. Cannot save session progress.";
-             console.error(window.firebaseError);
+    <style>
+        .correct-answer {
+            background-color: #d1fae5; /* Green 100 */
+            border-color: #10b981 !important; /* Green 500 */
+            color: #065f46; /* Green 800 */
+            font-weight: bold;
         }
-    </script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        'cbse-blue': '#1a3e6a', 
-                        'cbse-light': '#f0f4f8', 
-                        'accent-green': '#059669', 
-                    }
-                }
-            }
+        .user-incorrect {
+            background-color: #fee2e2; /* Red 100 */
+            border-color: #ef4444 !important; /* Red 500 */
+            color: #991b1b; /* Red 800 */
+            text-decoration: line-through;
         }
-    </script>
-    
-    <script src="./js/config.js"></script> 
+        .cbse-blue {
+            background-color: #3b82f6; /* Blue 500 - used for selected options */
+        }
+    </style>
 </head>
-<body class="bg-cbse-light min-h-screen antialiased">
-    
-    <div id="quiz-root">
-        <div class="flex items-center justify-center min-h-screen">
-            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-cbse-blue"></div>
+<body class="bg-gray-50 min-h-screen flex items-start justify-center p-8">
+
+    <div id="quiz-container" class="w-full">
         </div>
-    </div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useRef } = React;
+        // ----------------------------------------------------
+        // 1. SUPABASE CLIENT INITIALIZATION
+        // ----------------------------------------------------
+        // *** IMPORTANT: REPLACE WITH YOUR ACTUAL CREDENTIALS ***
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE'; 
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+
         const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Constants for Quiz and Database
-        const TOTAL_QUESTIONS_TO_PULL = 20;
-        const QUIZ_DURATION_MINUTES = 30;
-        const MAX_QUESTIONS_IN_POOL = 100; // Total questions in the 'demand_mcqs' table we consider for the sequence
+        const { useState, useEffect, useCallback, useMemo } = React;
 
-        // Mock Data for offline testing 
-        const MOCK_DEMAND_MCQ = Array.from({ length: MAX_QUESTIONS_IN_POOL }, (_, i) => ({
-            id: i + 1,
-            question_text: `Which factor is most likely to cause an outward shift in the demand curve for good X? (Mock Q ${i + 1})`,
-            options: [
-                'A rise in the price of good X.',
-                'A decrease in consumer income.',
-                'An increase in the price of a substitute good.',
-                'A successful advertising campaign for good X.',
-                
-            ],
-            correct_answer_index: (i % 4)
-        }));
+        // ----------------------------------------------------
+        // 2. STATE MANAGEMENT AND FETCHING
+        // ----------------------------------------------------
 
-        // --- 1. MAIN QUIZ COMPONENT ---
+        // Maps front-end buttons to database 'difficulty' values
+        const difficultyMap = {
+            'Simple': 'simple',
+            'Intermediate': 'medium', // Maps to 'medium' in DB
+            'Advanced': 'complex'    // Maps to 'complex' in DB
+        };
 
-        const DemandQuizApp = () => {
+        const App = () => {
+            const [selectedDifficulty, setSelectedDifficulty] = useState(null);
             const [quizQuestions, setQuizQuestions] = useState([]);
-            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
             const [userAnswers, setUserAnswers] = useState([]);
-            const [timerSeconds, setTimerSeconds] = useState(QUIZ_DURATION_MINUTES * 60);
-            const [quizStatus, setQuizStatus] = useState('loading'); // 'loading' | 'active' | 'completed' | 'review'
-            const [error, setError] = useState(null);
+            // 'initial' | 'loading' | 'active' | 'completed' | 'review'
+            const [quizStatus, setQuizStatus] = useState('initial'); 
+            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+            const [score, setScore] = useState(0);
+
+            const totalQuestions = quizQuestions.length;
             
-            const [supabaseClient, setSupabaseClient] = useState(undefined);
-            const [isFirebaseReady, setIsFirebaseReady] = useState(false);
-            const initialFetchRef = useRef(false); // Ref to ensure fetch runs only once
-            
-            // Check for initial Firebase setup error
-            useEffect(() => {
-                if (window.firebaseError) {
-                    setError(prev => prev ? prev + ' | ' + window.firebaseError : window.firebaseError);
-                }
-            }, []);
+            // --- Handlers ---
 
-            // --- A. Client Initialization (Supabase and Firebase readiness check) ---
-            useEffect(() => {
-                // Supabase Client Initialization
-                const SUPABASE_URL = window.SUPABASE_URL;
-                const SUPABASE_KEY = window.SUPABASE_KEY;
-                
-                const IS_CONFIG_VALID = typeof SUPABASE_URL === 'string' && 
-                                        SUPABASE_URL.startsWith('http') && 
-                                        SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE';
-
-                if (IS_CONFIG_VALID) {
-                    try {
-                        const client = createClient(SUPABASE_URL, SUPABASE_KEY);
-                        setSupabaseClient(client);
-                    } catch (e) {
-                        console.error("Error during Supabase createClient:", e);
-                        setSupabaseClient(null); 
-                    }
-                } else {
-                    setSupabaseClient(null); 
-                }
-                
-                // Check if Firebase is ready
-                const checkAuth = () => {
-                    if (window.isAuthReady) {
-                        setIsFirebaseReady(true);
-                    } else {
-                        setTimeout(checkAuth, 100); // Poll until global auth is ready
-                    }
-                };
-                checkAuth();
-
-            }, []); 
-
-            // --- B. Data Fetching (Supabase + Offset/Persistence) ---
-            useEffect(() => {
-                // Wait until both Supabase client is initialized AND Firebase is authenticated
-                if (supabaseClient === undefined || !isFirebaseReady || initialFetchRef.current) return;
-                
-                initialFetchRef.current = true; // Mark that the initial fetch is running
-
-                const fetchQuestions = async () => {
-                    // Prepend the firebase error if it exists
-                    if (window.firebaseError) {
-                        setError(window.firebaseError);
-                    } else {
-                        setError(null);
-                    }
-                    
-                    setQuizStatus('loading');
-                    
-                    const userId = window.userId;
-                    let currentOffset = 0;
-                    
-                    const isSupabaseWorking = !!supabaseClient;
-                    const isFirestoreWorking = !!window.db; // Check if Firestore was initialized
-
-                    
-                    // --- 1. GET PERSISTENT OFFSET FROM FIRESTORE ---
-                    if (isFirestoreWorking) {
-                        try {
-                            const { doc, getDoc } = window.firebaseDependencies;
-                            // Path must match the security rules: /artifacts/{appId}/users/{userId}/...
-                            const offsetPath = `/artifacts/${window.__app_id || 'default-app-id'}/users/${userId}/quiz_settings`; 
-                            const docRef = doc(window.db, offsetPath, 'demand_quiz_offset');
-                            const docSnap = await getDoc(docRef);
-
-                            if (docSnap.exists()) {
-                                const savedOffset = docSnap.data().offset;
-                                if (savedOffset >= 0 && savedOffset < MAX_QUESTIONS_IN_POOL && savedOffset % TOTAL_QUESTIONS_TO_PULL === 0) {
-                                    currentOffset = savedOffset;
-                                    console.log(`Loaded offset: ${currentOffset}. Fetching next block.`);
-                                }
-                            }
-                        } catch (e) {
-                            console.error("Error fetching offset from Firestore, using default 0. This might be a rule failure.", e);
-                            setError(prev => (prev ? prev + ' | ' : '') + "Firestore read failed (check rules/connection). Using offset 0.");
-                        }
-                    } else if (!isFirestoreWorking && !window.firebaseError) {
-                            setError(prev => (prev ? prev + ' | ' : '') + "Firestore service failed to initialize. Using offset 0.");
-                    }
-
-
-                    // --- 2. FETCH SEQUENTIAL BLOCK FROM SUPABASE (CORRECTED QUERY) ---
-                    if (isSupabaseWorking) {
-                        try {
-                            // CORRECTION: Use the column names from your actual schema
-                            const { data: rawQuestions, error: dbError } = await supabaseClient
-                                .from('demand_mcqs') 
-                                .select('q_no, question_text, option_a, option_b, option_c, option_d, correct_answer_key') 
-                                .order('q_no', { ascending: true })
-                                .limit(TOTAL_QUESTIONS_TO_PULL)
-                                .range(currentOffset, currentOffset + TOTAL_QUESTIONS_TO_PULL - 1); 
-
-                            if (dbError) throw dbError;
-
-                            if (rawQuestions.length === 0) {
-                                 console.warn("Supabase returned no questions. Falling back to mock data.");
-                                 const mockBlock = MOCK_DEMAND_MCQ.slice(currentOffset, currentOffset + TOTAL_QUESTIONS_TO_PULL);
-                                 setQuizQuestions(mockBlock);
-                                 setUserAnswers(mockBlock.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
-                                 setError(prev => (prev ? prev + ' | ' : '') + `Supabase returned no results for offset ${currentOffset}. Using mock data.`);
-                            } else {
-                                // CORRECTION: Transform the data to the format the React state expects
-                                const transformedQuestions = rawQuestions.map(q => ({
-                                    id: q.q_no,
-                                    question_text: q.question_text,
-                                    // Combine option columns into an array for the 'options' property
-                                    options: [q.option_a, q.option_b, q.option_c, q.option_d],
-                                    // Convert 'A', 'B', 'C', 'D' key to 0, 1, 2, 3 index
-                                    correct_answer_index: q.correct_answer_key ? q.correct_answer_key.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0) : null
-                                }));
-                                
-                                setQuizQuestions(transformedQuestions);
-                                setUserAnswers(transformedQuestions.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
-                                setError(prev => prev === window.firebaseError ? window.firebaseError : null); 
-                            }
-                            
-                            // --- 3. CALCULATE AND SAVE THE NEXT OFFSET FOR NEXT TIME ---
-                            if (isFirestoreWorking) {
-                                const nextOffset = (currentOffset + TOTAL_QUESTIONS_TO_PULL) % MAX_QUESTIONS_IN_POOL;
-
-                                try {
-                                    const { doc, setDoc } = window.firebaseDependencies;
-                                    const offsetPath = `/artifacts/${window.__app_id || 'default-app-id'}/users/${userId}/quiz_settings`;
-                                    const docRef = doc(window.db, offsetPath, 'demand_quiz_offset');
-                                    
-                                    await setDoc(docRef, { 
-                                        offset: nextOffset,
-                                        totalQuestions: MAX_QUESTIONS_IN_POOL,
-                                        blockSize: TOTAL_QUESTIONS_TO_PULL,
-                                        lastUpdated: new Date().toISOString()
-                                    }, { merge: true }); 
-                                    console.log(`Saved next offset: ${nextOffset} for user ${userId}.`);
-                                    setError(prev => prev === window.firebaseError ? window.firebaseError : null); 
-                                } catch (e) {
-                                    console.error("Error saving offset to Firestore, write failed (check rules/connection):", e);
-                                    setError(prev => (prev ? prev + ' | ' : '') + "Firestore write failed (check rules/connection).");
-                                }
-                            }
-                            
-                            setQuizStatus('active');
-
-                        } catch (err) {
-                            console.error("Error loading questions from Supabase:", err.message);
-                            setError(prev => (prev ? prev + ' | ' : '') + `Supabase connection failed. Error: ${err.message}. Loading mock data starting at offset ${currentOffset}.`);
-                            
-                            // Fallback: Use the corresponding mock block based on the current offset
-                            const mockBlock = MOCK_DEMAND_MCQ.slice(currentOffset, TOTAL_QUESTIONS_TO_PULL);
-                            setQuizQuestions(mockBlock);
-                            setUserAnswers(mockBlock.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
-                            setQuizStatus('active');
-                        }
-                    } else {
-                        // Supabase client initialization failed (bad config or environment)
-                        const message = "Supabase client failed to initialize or configuration invalid. Loading mock data starting at offset 0.";
-                        setError(prev => (prev ? prev + ' | ' : '') + message);
-                        console.warn(message);
-                        
-                        const mockSelected = MOCK_DEMAND_MCQ.slice(0, TOTAL_QUESTIONS_TO_PULL);
-                        setQuizQuestions(mockSelected);
-                        setUserAnswers(mockSelected.map(q => ({ questionId: q.id, selectedOptionIndex: null })));
-                        setQuizStatus('active');
-                    }
-                };
-                
-                fetchQuestions();
-
-            }, [supabaseClient, isFirebaseReady]); 
-
-            // --- Timer Logic (Unchanged) ---
-            useEffect(() => {
-                if (quizStatus === 'active' && timerSeconds > 0) {
-                    const timer = setInterval(() => {
-                        setTimerSeconds(prevSeconds => prevSeconds - 1);
-                    }, 1000);
-                    return () => clearInterval(timer);
-                } else if (quizStatus === 'active' && timerSeconds === 0) {
-                    handleSubmitQuiz();
-                }
-            }, [quizStatus, timerSeconds]);
-
-            // --- Handlers, Computed Values, Rendering Logic (Unchanged) ---
-
-            const handleOptionSelect = (optionIndex) => {
-                if (quizStatus !== 'active' || !quizQuestions.length) return;
-
-                setUserAnswers(prevAnswers => {
-                    const currentQuestionId = quizQuestions[currentQuestionIndex].id;
-                    const existingAnswerIndex = prevAnswers.findIndex(a => a.questionId === currentQuestionId);
-
-                    if (existingAnswerIndex !== -1) {
-                        const newAnswers = [...prevAnswers];
-                        newAnswers[existingAnswerIndex] = {
-                            ...newAnswers[existingAnswerIndex],
-                            selectedOptionIndex: optionIndex
-                        };
-                        return newAnswers;
-                    }
-                    return prevAnswers;
-                });
+            const setDifficulty = (difficulty) => {
+                setSelectedDifficulty(difficulty);
+                setQuizStatus('loading');
+                fetchQuestions(difficultyMap[difficulty]);
             };
 
+            const fetchQuestions = async (difficultyValue) => {
+                const { data: rawQuestions, error: dbError } = await supabaseClient
+                    // *** CRITICAL: Querying the new table and selecting all required fields ***
+                    .from('demand_mcqs_v2') 
+                    .select('id, q_no, question_type, scenario_reason_text, question_text, option_a, option_b, option_c, option_d, correct_answer_key')
+                    .eq('difficulty', difficultyValue) // Filter by difficulty
+                    .order('q_no', { ascending: true }) // Ensure ordering
+                    .limit(20); // Limit to 20 questions
+
+                if (dbError) {
+                    console.error('Error fetching questions:', dbError);
+                    setQuizStatus('initial');
+                    alert('Error loading quiz data.');
+                    return;
+                }
+
+                if (rawQuestions.length === 0) {
+                     console.warn(`No questions found for difficulty: ${difficultyValue}`);
+                     setQuizStatus('initial');
+                     alert('No questions found for this difficulty. Please check your Supabase data.');
+                     return;
+                }
+
+                // Transform data for easier React use
+                const transformedQuestions = rawQuestions.map(q => ({
+                    id: q.id,
+                    q_no: q.q_no, // Use DB 'id' as unique identifier, 'q_no' for ordering
+                    question_type: q.question_type,
+                    scenario_reason_text: q.scenario_reason_text,
+                    question_text: q.question_text,
+                    // Filter out null options
+                    options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(o => o),
+                    correct_answer_index: q.correct_answer_key ? q.correct_answer_key.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0) : null
+                }));
+
+                setQuizQuestions(transformedQuestions);
+                setUserAnswers([]);
+                setCurrentQuestionIndex(0);
+                setQuizStatus('active');
+            };
+
+            const handleOptionSelect = (optionIndex) => {
+                const currentQuestionId = quizQuestions[currentQuestionIndex].id;
+
+                setUserAnswers(prevAnswers => {
+                    const existingIndex = prevAnswers.findIndex(a => a.questionId === currentQuestionId);
+                    const newAnswer = {
+                        questionId: currentQuestionId,
+                        selectedOptionIndex: optionIndex
+                    };
+
+                    if (existingIndex > -1) {
+                        // Update existing answer
+                        return prevAnswers.map((a, index) => 
+                            index === existingIndex ? newAnswer : a
+                        );
+                    } else {
+                        // Add new answer
+                        return [...prevAnswers, newAnswer];
+                    }
+                });
+            };
+            
             const handleNavigation = (direction) => {
-                if (direction === 'next' && currentQuestionIndex < quizQuestions.length - 1) {
-                    setCurrentQuestionIndex(currentQuestionIndex + 1);
-                } else if (direction === 'previous' && currentQuestionIndex > 0) {
-                    setCurrentQuestionIndex(currentQuestionIndex - 1);
+                const newIndex = currentQuestionIndex + direction;
+                if (newIndex >= 0 && newIndex < totalQuestions) {
+                    setCurrentQuestionIndex(newIndex);
                 }
             };
             
             const handleSubmitQuiz = () => {
-                setQuizStatus('completed');
-                setTimerSeconds(0);
-            };
-
-            const formatTime = (totalSeconds) => {
-                const minutes = Math.floor(totalSeconds / 60);
-                const seconds = totalSeconds % 60;
-                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            };
-
-            const score = useMemo(() => {
-                if (quizStatus !== 'completed' && quizStatus !== 'review') return 0;
-                let correctCount = 0;
-                quizQuestions.forEach(q => {
-                    const userAns = userAnswers.find(a => a.questionId === q.id);
-                    if (userAns && userAns.selectedOptionIndex === q.correct_answer_index) {
-                        correctCount++;
+                let finalScore = 0;
+                userAnswers.forEach(userAns => {
+                    const question = quizQuestions.find(q => q.id === userAns.questionId);
+                    if (question && userAns.selectedOptionIndex === question.correct_answer_index) {
+                        finalScore++;
                     }
                 });
-                return correctCount;
-            }, [quizStatus, quizQuestions, userAnswers]);
 
-
-            // --- RENDERING LOGIC (Unchanged) ---
-
-            const renderTimer = () => (
-                <div className={`text-xl font-semibold p-2 rounded-lg transition-colors ${timerSeconds <= 300 ? 'bg-red-100 text-red-600 border border-red-300' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
-                    Time Remaining: {formatTime(timerSeconds)}
+                setScore(finalScore);
+                setQuizStatus('completed');
+            };
+            
+            // ----------------------------------------------------
+            // 3. RENDERING COMPONENTS
+            // ----------------------------------------------------
+            
+            // --- A. Difficulty Selection Screen ---
+            const renderDifficultySelection = () => (
+                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
+                    <h1 className="text-4xl font-extrabold text-gray-900 mb-8">
+                        Select Quiz Difficulty
+                    </h1>
+                    <div className="space-y-4">
+                        {Object.keys(difficultyMap).map(key => (
+                            <button
+                                key={key}
+                                onClick={() => setDifficulty(key)}
+                                className="w-full py-4 text-xl rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-300 shadow-lg"
+                            >
+                                {key}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             );
             
+            // --- B. Active Quiz Screen (Includes A&R/Case Logic) ---
             const renderActiveQuiz = () => {
                 const q = quizQuestions[currentQuestionIndex];
                 if (!q) return <div className="text-center p-8 text-gray-500">Error: Question not found.</div>;
 
                 const currentSelected = userAnswers.find(a => a.questionId === q.id)?.selectedOptionIndex;
+                const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+                
+                // --- Dynamic Labels Setup (CRITICAL LOGIC) ---
+                let primaryLabel = 'Question:';       // Label for question_text
+                let secondaryLabel = 'Context:';      // Label for scenario_reason_text
+                let secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
+            
+                if (q.question_type === 'A&R') {
+                    // Scenario/Reasoning is the Assertion, Question_text is the Reasoning
+                    secondaryLabel = 'Assertion (A):'; 
+                    primaryLabel = 'Reasoning (R):';   
+                    secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
+                } else if (q.question_type === 'Case') {
+                    // Scenario/Reasoning is the Case Data, Question_text is the Question
+                    secondaryLabel = 'Case Data/Scenario:';
+                    primaryLabel = 'Question:'; 
+                    secondaryBoxStyle = 'bg-blue-50 border-blue-400'; 
+                }
+                // ----------------------------
 
                 return (
                     <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-4xl w-full mx-auto">
-                        {/* Display error prominently if quiz is active but there was a config/fetch error */}
-                        {error && (
-                            <div className="mb-6 bg-red-100 p-4 rounded-lg border border-red-300 text-red-800">
-                                <p className="font-semibold">Session/Connection Warning:</p>
-                                <p>{error}</p>
-                                {!window.db && <p className="mt-2 font-bold">Action Required: If you see "FATAL," ensure your environment provides the Firebase config.</p>}
-                            </div>
-                        )}
                         
                         <h2 className="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-4">
-                            Question {currentQuestionIndex + 1} of {quizQuestions.length}
+                            Question {currentQuestionIndex + 1} of {totalQuestions} ({selectedDifficulty})
+                            {q.question_type && <span className="text-lg font-normal ml-3 text-gray-500">({q.question_type})</span>}
                         </h2>
+
+                        {/* --- Secondary/Context Text (Case Data / Assertion) --- */}
+                        {q.scenario_reason_text && (
+                            <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
+                                <p className="font-semibold text-sm text-gray-800 mb-2">
+                                    {secondaryLabel}
+                                </p>
+                                <p className="text-gray-700 whitespace-pre-wrap">{q.scenario_reason_text}</p>
+                            </div>
+                        )}
+                        {/* ------------------------------------------------------ */}
                         
-                        <p className="text-lg font-medium mb-8 text-gray-700">{q.question_text}</p>
+                        {/* --- Primary Question Text (Question / Reasoning) --- */}
+                        <p className="text-lg font-medium mb-8 text-gray-700">
+                            <span className="font-semibold text-blue-600 mr-2">{primaryLabel}</span>
+                            {q.question_text}
+                        </p>
                         
                         <div className="space-y-4">
                             {q.options.map((option, index) => {
@@ -420,7 +242,7 @@
                                         onClick={() => handleOptionSelect(index)}
                                         className={`w-full text-left p-4 rounded-lg transition-all duration-200 border-2
                                             ${isSelected 
-                                                ? 'bg-cbse-blue text-white shadow-md border-cbse-blue scale-[1.01]' 
+                                                ? 'bg-blue-600 text-white shadow-md border-blue-600 scale-[1.01]' 
                                                 : 'bg-gray-50 text-gray-800 hover:bg-blue-50 hover:border-blue-300 border-gray-200'
                                             }
                                         `}
@@ -434,26 +256,25 @@
                         {/* Navigation and Submission */}
                         <div className="mt-10 flex justify-between items-center pt-6 border-t">
                             <button
-                                onClick={() => handleNavigation('previous')}
+                                onClick={() => handleNavigation(-1)}
                                 disabled={currentQuestionIndex === 0}
-                                className="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-300 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 disabled:opacity-50 transition duration-150"
                             >
-                                &larr; Previous
+                                Previous
                             </button>
-                            
-                            {currentQuestionIndex === quizQuestions.length - 1 ? (
+                            {isLastQuestion ? (
                                 <button
                                     onClick={handleSubmitQuiz}
-                                    className="px-8 py-3 bg-accent-green text-white font-bold text-lg rounded-lg shadow-xl hover:bg-green-700 transition duration-150 transform hover:scale-[1.03]"
+                                    className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md"
                                 >
                                     Submit Quiz
                                 </button>
                             ) : (
                                 <button
-                                    onClick={() => handleNavigation('next')}
-                                    className="px-6 py-2 bg-cbse-blue text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition duration-150"
+                                    onClick={() => handleNavigation(1)}
+                                    className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-150 shadow-md"
                                 >
-                                    Next &rarr;
+                                    Next
                                 </button>
                             )}
                         </div>
@@ -461,79 +282,102 @@
                 );
             };
 
+            // --- C. Completion Results Screen ---
             const renderCompletionResults = () => (
-                <div className="bg-white p-12 rounded-xl shadow-2xl border-4 border-accent-green max-w-3xl w-full mx-auto text-center">
-                    {error && (
-                        <div className="mb-6 bg-red-100 p-4 rounded-lg border border-red-300 text-red-800">
-                            <p className="font-semibold">Session/Connection Warning:</p>
-                            <p>{error}</p>
-                        </div>
-                    )}
-                    <h1 className="text-4xl font-extrabold text-accent-green mb-4">Quiz Completed!</h1>
-                    <p className="text-xl text-gray-600 mb-8">Your results for the Demand chapter quiz are:</p>
-
-                    <div className="bg-green-50 p-6 rounded-lg mb-8">
-                        <p className="text-5xl font-bold text-accent-green">{score} / {quizQuestions.length}</p>
-                        <p className="text-xl text-green-700 mt-2">Final Score</p>
+                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
+                    <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Quiz Submitted!</h1>
+                    <p className="text-xl text-gray-700 mb-8">Your final score is:</p>
+                    <div className="text-6xl font-bold text-green-600 mb-10">
+                        {score} / {totalQuestions}
                     </div>
-                    
-                    <button
-                        onClick={() => setQuizStatus('review')}
-                        className="px-8 py-3 bg-cbse-blue text-white font-bold text-lg rounded-lg shadow-xl hover:bg-blue-700 transition duration-150 transform hover:scale-[1.03] mt-4"
-                    >
-                        Review All Answers
-                    </button>
+                    <div className="space-y-4">
+                        <button
+                            onClick={() => setQuizStatus('review')}
+                            className="w-full py-3 text-lg rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
+                        >
+                            Review All Answers
+                        </button>
+                        <button
+                            onClick={() => setQuizStatus('initial')}
+                            className="w-full py-3 text-lg rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition duration-300"
+                        >
+                            Select New Difficulty
+                        </button>
+                    </div>
                 </div>
             );
-
+            
+            // --- D. Review Mode Screen (Shows ALL Answers) ---
             const renderReviewMode = () => (
-                <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-6xl w-full mx-auto">
-                    {error && (
-                        <div className="mb-6 bg-red-100 p-4 rounded-lg border border-red-300 text-red-800">
-                            <p className="font-semibold">Session/Connection Warning:</p>
-                            <p>{error}</p>
-                        </div>
-                    )}
-                    <h1 className="text-3xl font-extrabold text-cbse-blue mb-6 border-b pb-4">
-                        Quiz Review ({score}/{quizQuestions.length})
+                <div className="bg-white p-8 rounded-xl shadow-2xl max-w-4xl w-full mx-auto">
+                    <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
+                        Review: {selectedDifficulty} Quiz
                     </h1>
-                    <p className="text-red-600 font-medium mb-6">Incorrect answers are marked with a line through your selected option. Correct answers are highlighted in green.</p>
                     
-                    <div className="space-y-10">
-                        {quizQuestions.map((q, index) => {
+                    <div className="space-y-12">
+                        {quizQuestions.map((q, qIndex) => {
                             const userAns = userAnswers.find(a => a.questionId === q.id);
-                            const isCorrect = userAns?.selectedOptionIndex === q.correct_answer_index;
-                            const resultStyle = isCorrect 
-                                ? 'border-green-400 bg-green-50' 
-                                : (userAns?.selectedOptionIndex !== null ? 'border-red-400 bg-red-50' : 'border-yellow-400 bg-yellow-50');
+                            const selectedIndex = userAns ? userAns.selectedOptionIndex : -1;
+                            const isCorrect = selectedIndex === q.correct_answer_index;
+                            
+                            // --- Dynamic Labels Setup for Review ---
+                            let primaryLabel = 'Question:';
+                            let secondaryLabel = 'Context:';
+                            let secondaryBoxStyle = 'bg-gray-100 border-gray-300';
+                        
+                            if (q.question_type === 'A&R') {
+                                secondaryLabel = 'Assertion (A):'; 
+                                primaryLabel = 'Reasoning (R):';   
+                            } else if (q.question_type === 'Case') {
+                                secondaryLabel = 'Case Data/Scenario:';
+                                primaryLabel = 'Question:'; 
+                                secondaryBoxStyle = 'bg-blue-50 border-blue-400';
+                            }
+                            // ------------------------------------
 
                             return (
-                                <div key={q.id} className={`p-5 rounded-lg border-l-8 ${resultStyle} shadow-sm`}>
-                                    <p className="text-lg font-semibold text-gray-800 mb-3">
-                                        {index + 1}. {q.question_text}
-                                    </p>
+                                <div key={q.id} className="border p-6 rounded-xl shadow-sm">
+                                    <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                                        Q{qIndex + 1}. ({q.question_type})
+                                    </h3>
                                     
+                                    {/* Secondary/Context Text (Case Data / Assertion) */}
+                                    {q.scenario_reason_text && (
+                                        <div className={`mb-4 p-3 border-l-4 ${secondaryBoxStyle}`}>
+                                            <p className="font-semibold text-sm text-gray-700 mb-1">
+                                                {secondaryLabel}
+                                            </p>
+                                            <p className="text-gray-700 whitespace-pre-wrap">{q.scenario_reason_text}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Primary Question Text (Question / Reasoning) */}
+                                    <p className="text-lg mb-6 text-gray-700">
+                                        <span className="font-bold text-blue-600 mr-2">{primaryLabel}</span>
+                                        {q.question_text}
+                                    </p>
+
                                     <div className="space-y-2">
-                                        {q.options.map((option, optIndex) => {
-                                            const isUserSelection = userAns?.selectedOptionIndex === optIndex;
-                                            const isCorrectAnswer = q.correct_answer_index === optIndex;
+                                        {q.options.map((option, index) => {
+                                            const optionKey = String.fromCharCode(65 + index);
+                                            const isSelected = selectedIndex === index;
+                                            const isCorrect = index === q.correct_answer_index;
                                             
-                                            let optionClass = 'p-3 rounded-md text-sm transition-all duration-150';
-                                            
-                                            if (isCorrectAnswer) {
-                                                optionClass += ' bg-green-200 font-bold text-green-800';
-                                            } else if (isUserSelection && !isCorrect) {
-                                                optionClass += ' bg-red-200 line-through text-red-800'; 
+                                            let className = 'w-full text-left p-3 rounded-lg border-2 text-gray-800';
+
+                                            if (isCorrect) {
+                                                className += ' correct-answer';
+                                            } else if (isSelected && !isCorrect) {
+                                                className += ' user-incorrect';
                                             } else {
-                                                optionClass += ' bg-white text-gray-700';
+                                                className += ' bg-gray-50 border-gray-200';
                                             }
 
                                             return (
-                                                <div key={optIndex} className={optionClass}>
-                                                    <span className="font-bold mr-2">{String.fromCharCode(65 + optIndex)}.</span> 
-                                                    {option} 
-                                                    {isCorrectAnswer && <span className="ml-2 text-xs font-bold text-green-900">(Correct)</span>}
-                                                    {isUserSelection && !isCorrectAnswer && <span className="ml-2 text-xs font-bold text-red-900">(Your Selection)</span>}
+                                                <div key={index} className={className}>
+                                                    <span className="font-bold mr-3">{optionKey}.</span> {option}
+                                                    {isCorrect && <span className="ml-3 text-sm font-bold">(Correct)</span>}
+                                                    {isSelected && !isCorrect && <span className="ml-3 text-sm font-bold">(Your Answer)</span>}
                                                 </div>
                                             );
                                         })}
@@ -542,69 +386,32 @@
                             );
                         })}
                     </div>
-                    <a href="economics.html"
-                        className="mt-10 inline-block px-6 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition duration-150"
-                    >
-                        &larr; Back to Economics Page
-                    </a>
-                </div>
-            );
-
-
-            let content;
-            let showTimer = false;
-
-            switch (quizStatus) {
-                case 'loading':
-                    content = (
-                        <div className="text-center p-20">
-                            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-cbse-blue mx-auto mb-4"></div>
-                            {/* Prominent error display in the loading state */}
-                            {error ? (
-                                <div className="mt-4 bg-red-100 p-4 rounded-lg border border-red-300">
-                                    <p className="text-xl font-semibold text-red-700">Database/Session Warning:</p>
-                                    <p className="text-lg text-red-600 mt-2">{error}</p>
-                                </div>
-                            ) : (
-                                <p className="text-xl text-gray-600">Checking user progress and loading the next set of 20 questions...</p>
-                            )}
-                        </div>
-                    );
-                    break;
-                case 'active':
-                    content = renderActiveQuiz();
-                    showTimer = true;
-                    break;
-                case 'completed':
-                    content = renderCompletionResults();
-                    break;
-                case 'review':
-                    content = renderReviewMode();
-                    break;
-                default:
-                    content = <div className="text-center p-20 text-red-500">An unexpected error occurred.</div>;
-            }
-
-            return (
-                <div className="min-h-screen bg-cbse-light p-4 sm:p-10 font-sans">
-                    <header className="mb-8 flex flex-col sm:flex-row justify-between items-center max-w-6xl mx-auto">
-                        <h1 className="text-3xl font-extrabold text-cbse-blue">
-                            Economics: Demand Chapter Quiz
-                        </h1>
-                        {showTimer && renderTimer()}
-                    </header>
                     
-                    <main className="pb-10">
-                        {content}
-                    </main>
+                    <button
+                        onClick={() => setQuizStatus('initial')}
+                        className="mt-10 py-3 px-8 text-lg rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition duration-300"
+                    >
+                        Start New Quiz
+                    </button>
                 </div>
             );
+
+            // --- E. Main App Router ---
+            switch (quizStatus) {
+                case 'active':
+                    return renderActiveQuiz();
+                case 'completed':
+                    return renderCompletionResults();
+                case 'review':
+                    return renderReviewMode();
+                case 'loading':
+                    return <div className="text-center p-12 text-xl font-semibold text-blue-600">Loading questions...</div>;
+                default:
+                    return renderDifficultySelection();
+            }
         };
 
-        // --- 2. MOUNT THE REACT APPLICATION ---
-
-        const root = ReactDOM.createRoot(document.getElementById('quiz-root'));
-        root.render(<DemandQuizApp />);
+        ReactDOM.createRoot(document.getElementById('quiz-container')).render(<App />);
 
     </script>
 </body>
