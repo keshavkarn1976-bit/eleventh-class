@@ -36,15 +36,18 @@
         // ----------------------------------------------------
         // 1. SUPABASE CLIENT INITIALIZATION
         // ----------------------------------------------------
-        // *** IMPORTANT: REPLACE WITH YOUR ACTUAL CREDENTIALS ***
-        const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE'; 
-        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+       // Accessing credentials from the global window object set by config.js
+const SUPABASE_URL = window.SUPABASE_URL; 
+const SUPABASE_KEY = window.SUPABASE_ANON_KEY; 
 
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+// Validate that the variables exist before creating the client
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error("Supabase configuration variables are missing or invalid. Check config.js file and window object definition.");
+    // Exit or display a failure message if necessary
+}
 
-        const { useState, useEffect, useCallback, useMemo } = React;
-
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
         // ----------------------------------------------------
         // 2. STATE MANAGEMENT AND FETCHING
         // ----------------------------------------------------
