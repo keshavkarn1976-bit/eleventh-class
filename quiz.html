@@ -52,7 +52,6 @@
     <script type="text/babel">
         const { createClient } = supabase;
         
-        // Defensive check moved to the start of the script block
         const SUPABASE_URL = window.SUPABASE_URL; 
         const SUPABASE_KEY = window.SUPABASE_ANON_KEY; 
 
@@ -64,7 +63,6 @@
                     <p className="text-sm text-gray-500 mt-4">Please check that 'config.js' is correctly defining window.SUPABASE_URL and window.SUPABASE_ANON_KEY.</p>
                 </div>
             );
-            // This is outside the main App component, so we manually render the error
             ReactDOM.createRoot(document.getElementById('quiz-container')).render(renderConfigError());
             throw new Error("Supabase configuration missing. Check console for details.");
         }
@@ -78,10 +76,8 @@
 
             React.useEffect(() => {
                 if (contentRef.current && window.MathJax) {
-                    // This tells MathJax to look at the newly rendered content and process LaTeX
                     window.MathJax.typeset([contentRef.current]);
                 }
-                // Cleanup function to clear MathJax state if component unmounts
                 return () => {
                     if (window.MathJax) {
                         window.MathJax.typesetClear([contentRef.current]);
@@ -92,11 +88,10 @@
             return <div ref={contentRef} dangerouslySetInnerHTML={{ __html: content }} />;
         };
 
-        // Maps front-end buttons to database 'difficulty' values
         const difficultyMap = {
             'Simple': 'simple',
-            'Intermediate': 'medium', // Maps to 'medium' in DB
-            'Advanced': 'complex'    // Maps to 'complex' in DB
+            'Intermediate': 'medium',
+            'Advanced': 'complex'
         };
 
         const App = () => {
@@ -110,7 +105,6 @@
             const totalQuestions = quizQuestions.length;
             
             // --- Handlers ---
-
             const setDifficulty = (difficulty) => {
                 setSelectedDifficulty(difficulty);
                 setQuizStatus('loading');
@@ -189,7 +183,7 @@
 
 
             // ----------------------------------------------------
-            // 3. RENDERING COMPONENTS (DEFINED INSIDE APP)
+            // 3. RENDERING COMPONENTS
             // ----------------------------------------------------
             
             const renderDifficultySelection = () => (
@@ -224,10 +218,8 @@
                 let secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
                 
                 let secondaryContent = q.scenario_reason_text;
-                // MODIFICATION 1: Hide context for pure MCQs or if content is null/N/A
                 let showSecondaryBox = q.question_type !== 'MCQ' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
                 
-                // MODIFICATION 2: Correct A&R Structure
                 if (q.question_type === 'A&R') {
                     secondaryLabel = 'Assertion (A):'; 
                     secondaryContent = q.scenario_reason_text; 
@@ -236,11 +228,10 @@
                     secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
                 } 
                 
-                // MODIFICATION 3: Correct Case Structure
                 if (q.question_type === 'Case') {
                     primaryLabel = 'Question:';
                     secondaryLabel = 'Case Data/Scenario:';
-                    showSecondaryBox = false; // We render it after the question text below
+                    showSecondaryBox = false; 
                     secondaryBoxStyle = 'bg-blue-50 border-blue-400';
                 }
 
@@ -258,7 +249,6 @@
                                 <p className="font-semibold text-sm text-gray-800 mb-2">
                                     {secondaryLabel}
                                 </p>
-                                {/* MODIFICATION 4: Use LatexContent component */}
                                 <LatexContent content={secondaryContent} /> 
                             </div>
                         )}
@@ -266,17 +256,15 @@
                         {/* Primary Question Text (Question or Reasoning) */}
                         <p className="text-lg font-medium mb-4 text-gray-700">
                             <span className="font-semibold text-blue-600 mr-2">{primaryLabel}</span>
-                            {/* MODIFICATION 4: Use LatexContent component */}
                             <LatexContent content={q.question_text} />
                         </p>
 
-                        {/* MODIFICATION 3 (Active Mode): Case Data/Scenario comes AFTER the question */}
+                        {/* Case Data/Scenario comes AFTER the question */}
                         {q.question_type === 'Case' && secondaryContent && secondaryContent.toLowerCase() !== 'n/a' && (
                             <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
                                 <p className="font-semibold text-sm text-gray-800 mb-2">
                                     {secondaryLabel}
                                 </p>
-                                {/* MODIFICATION 4: Use LatexContent component */}
                                 <LatexContent content={secondaryContent} /> 
                             </div>
                         )}
@@ -296,7 +284,6 @@
                                         `}
                                     >
                                         <span className="font-bold mr-3">{String.fromCharCode(65 + index)}.</span> 
-                                        {/* MODIFICATION 4: Use LatexContent component for options */}
                                         <LatexContent content={option} />
                                     </button>
                                 );
@@ -356,7 +343,6 @@
                 </div>
             );
 
-            // --- D. Review Mode Screen (MODIFICATION 5: Correct Answer Display) ---
             const renderReviewMode = () => (
                 <div className="bg-white p-8 rounded-xl shadow-2xl max-w-4xl w-full mx-auto">
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
@@ -423,3 +409,59 @@
                                             const optionKey = String.fromCharCode(65 + index);
                                             const isSelected = selectedIndex === index;
                                             const isCorrect = index === q.correct_answer_index;
+                                            
+                                            let className = 'w-full text-left p-3 rounded-lg border-2 text-gray-800';
+
+                                            if (isCorrect) {
+                                                className += ' correct-answer';
+                                            } else if (isSelected && !isCorrect) {
+                                                className += ' user-incorrect';
+                                            } else {
+                                                className += ' bg-gray-50 border-gray-200';
+                                            }
+
+                                            return (
+                                                <div key={index} className={className}>
+                                                    <span className="font-bold mr-3">{optionKey}.</span> 
+                                                    <LatexContent content={option} />
+                                                    {isCorrect && <span className="ml-3 text-sm font-bold">(Correct Answer)</span>}
+                                                    {isSelected && !isCorrect && <span className="ml-3 text-sm font-bold">(Your Answer)</span>}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    
+                    <button
+                        onClick={() => setQuizStatus('initial')}
+                        className="mt-10 py-3 px-8 text-lg rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition duration-300"
+                    >
+                        Start New Quiz
+                    </button>
+                </div>
+            );
+
+            // --- E. Main App Router ---
+            switch (quizStatus) {
+                case 'active':
+                    return renderActiveQuiz();
+                case 'completed':
+                    return renderCompletionResults();
+                case 'review':
+                    return renderReviewMode();
+                case 'loading':
+                    return <div className="text-center p-12 text-xl font-semibold text-blue-600">Loading questions...</div>;
+                default:
+                    return renderDifficultySelection(); 
+            }
+        };
+
+        // Initialize React app
+        ReactDOM.createRoot(document.getElementById('quiz-container')).render(<App />);
+
+    </script>
+</body>
+</html>
