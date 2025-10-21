@@ -14,13 +14,13 @@
         const configError = document.getElementById('config-error');
 
         if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
-            // Configuration failed (config.js likely still has a path/casing error)
+            // Configuration failed (This error should now be gone if the path is correct)
             if (configError) {
                 configError.style.display = 'block';
             }
-            console.error("Configuration failed: The absolute path /eleventh-class/js/config.js failed. Please check file capitalization.");
+            console.error("Configuration failed: Supabase keys are missing. Absolute path /eleventh-class/js/config.js failed.");
         } else {
-            // FIX: Use 'supabaseClient' variable to avoid the ReferenceError conflict.
+            // FIX: Use 'supabaseClient' to avoid the ReferenceError.
             const supabaseClient = supabase.createClient(
                 window.SUPABASE_URL,
                 window.SUPABASE_ANON_KEY
@@ -36,30 +36,30 @@
         async function fetchQuizData(supabaseClient) {
             const quizContainer = document.getElementById('quiz-container');
             
-            // ⚠️ IMPORTANT: REPLACE 'quiz_questions' with your ACTUAL Supabase table name
+            // ✅ FINAL FIX: The table name is corrected to your actual table name.
             const { data: quizData, error } = await supabaseClient
-                .from('quiz_questions') 
+                .from('demand_mcqs_v2') 
                 .select('*');
 
             if (error) {
                 console.error('Supabase Query Error:', error);
                 // Displays query error details on the page
                 if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for **Row Level Security (RLS)** policy errors!</p>`;
+                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for **Row Level Security (RLS) 401/403** errors!</p>`;
                 }
                 return;
             }
 
             if (quizData && quizData.length > 0) {
                 console.log('Quiz data loaded successfully!', quizData);
-                // SUCCESS: This message indicates both file loading and database connection/query succeeded.
+                // SUCCESS!
                 if (quizContainer) {
                      quizContainer.innerHTML = `<p class="text-green-600 font-bold">SUCCESS! Loaded ${quizData.length} questions. Now insert quiz rendering logic.</p>`;
                 }
             } else {
-                // If the connection worked but data didn't return (Table empty or RLS is blocking)
+                // If data didn't return (Table is empty or RLS is blocking)
                 if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">No questions found. The table is empty or the **Row Level Security (RLS)** policy is blocking anonymous access.</p>`;
+                    quizContainer.innerHTML = `<p class="error-message">No questions found. The table is empty or the **Row Level Security (RLS)** policy is blocking anonymous access. (Check RLS in your Supabase dashboard!)</p>`;
                 }
             }
         }
