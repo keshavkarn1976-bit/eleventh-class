@@ -177,7 +177,10 @@ function cleanText(text) {
         const typeString = q.question_type ? q.question_type.toLowerCase() : '';
         
         // Check if the type includes 'a&r', 'case', or 'assertion'
-        const hasType = typeString.includes('a&r') || typeString.includes('case') || typeString.includes('assertion');
+        const hasType = typeString.includes('a&r') || 
+                        typeString.includes('ar') || 
+                        typeString.includes('case') || 
+                        typeString.includes('assertion');
 
         // Check for raw text content (not null, not an empty string, and not 'N/A')
         const hasRawText = q.scenario_reason_text && 
