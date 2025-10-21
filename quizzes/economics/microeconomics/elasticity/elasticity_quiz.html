@@ -159,7 +159,7 @@ function cleanText(text) {
 
             renderQuiz();
         }
-        function renderQuiz() {
+       function renderQuiz() {
     const container = document.getElementById('quiz-container');
     
     const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
@@ -190,23 +190,22 @@ function cleanText(text) {
             questionText = cleanText(rawQuestionText);
         }
         
-        // --- SCENARIO/REASON BLOCK LOGIC ---
-        // Includes 'ar' for the robust type check fix
+        // --- SCENARIO/REASON BLOCK LOGIC (SUPPRESSED) ---
+        // This logic is kept for reference, but the output is forced to be empty below.
         const hasType = isAssertionType || 
                         typeString.includes('case'); 
 
-        // Check for raw text content (not null, not an empty string, and not 'N/A')
         const hasRawText = q.scenario_reason_text && 
                            q.scenario_reason_text.trim() !== '' && 
                            q.scenario_reason_text.toUpperCase() !== 'N/A';
         
         const showScenario = hasType && hasRawText;
 
-        // Clean the text only if we decided to display it
-        const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : '';
+        // 🛑 FIX APPLIED HERE: Force scenarioReasonText to be empty to prevent duplicate Reason display
+        const scenarioReasonText = ''; // showScenario ? cleanText(q.scenario_reason_text) : '';
         
         // =================================================================
-        // 🚨 TEMPORARY DEBUG LOG 🚨 (KEEP THIS UNTIL YOU VERIFY THE FIX)
+        // 🚨 TEMPORARY DEBUG LOG 🚨 (Delete this line after verification)
         console.log(`DEBUG Q${questionNumber}: Type: ${q.question_type} | isAssertionType: ${isAssertionType} | hasType: ${hasType} | Raw Data (scenario_reason_text): "${q.scenario_reason_text}" | hasRawText: ${hasRawText} | showScenario: ${showScenario}`);
         // =================================================================
 
@@ -235,8 +234,7 @@ function cleanText(text) {
             <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
                 <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
                 
-                ${showScenario ? 
-                    // This block displays the scenario/reason text (Only if showScenario is true)
+                ${scenarioReasonText ? // Now this is always false/empty, so the block won't render
                     `<div class="bg-gray-50 p-3 mb-4 shadow-inner border-l-4 border-cbse-blue">
                         <p class="text-base font-normal text-gray-800">
                             <span class="font-bold text-cbse-blue">Reason (R):</span> ${scenarioReasonText}
