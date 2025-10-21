@@ -144,21 +144,19 @@
         });
 
         // ----------------------------------------------------
-        // QUIZ LOGIC - CRITICAL: FIXED NAVIGATION TO FULL PATH
+        // QUIZ LOGIC - CRITICAL: FIXED NAVIGATION TO RELATIVE PATH
         // ----------------------------------------------------
         function startQuiz(chapterName) {
             // TARGET: Introductory Microeconomics, Unit 5, Chapter 3: Demand
             if (chapterName.trim() === '3. Demand') { 
-                // CRITICAL FIX: Direct navigation to the specified full path
-                window.location.href = '/quizzes/economics/microeconomics/demand_quiz.html';
+                // CRITICAL FIX: Direct navigation using the relative path
+                window.location.href = './quizzes/economics/microeconomics/demand_quiz.html';
                 return;
             }
             
             // Logic for ALL other chapters (placeholder alert)
             const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
             alert(`Quiz not yet implemented for: ${chapterName}! Target URL: /quizzes/${urlSafeName}.html`);
-            // When ready, replace the alert above with:
-            // window.location.href = `/quizzes/${urlSafeName}.html`;
         }
         // ----------------------------------------------------
         // END OF QUIZ LOGIC
