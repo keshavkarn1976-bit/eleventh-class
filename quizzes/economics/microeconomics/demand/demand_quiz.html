@@ -65,7 +65,6 @@
             if (!text) return '';
             
             // 1. Convert LaTeX price/value notation to clean HTML/text
-            // Replaces $\text{50}$, $\text{₹}5$ etc. with clean text
             let cleaned = text
                 .replace(/\$\\(text)\{([^\}]+)\}\$|\\text\{([^\}]+)\}|(\\\$)|(\\\\)|(\text\{[^\}]+\})/g, (match, p1, p2, p3) => {
                     // Check for $...$ around \text{}
@@ -83,7 +82,11 @@
                 .replace(/\$/g, '') // Remove any remaining stray $ signs
                 .replace(/\\(left|right)[\(\)\|\{\}]/g, ''); // Removes LaTeX sizing/bracket commands
 
-            // 2. Convert Markdown bolding to HTML bolding
+            // 2. FIX: Target specific double-star formatting and replace with underline 
+            // Handles patterns like a **'Shift'** in t
+            cleaned = cleaned.replace(/a\s+\*+['"]?([^*'"]+)['"]?\*+\s+in/, 'a <u>$1</u> in');
+
+            // 3. Convert all other Markdown bolding to HTML strong
             // Replaces **word** with <strong>word</strong>
             cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             
@@ -157,6 +160,7 @@
                 // Use the cleanText utility on all text fields before rendering
                 const questionText = cleanText(q.question_text);
                 const scenarioReasonText = cleanText(q.scenario_reason_text);
+                const showScenario = ['A&R', 'Case'].includes(q.question_type);
 
                 const options = [
                     { key: 'A', text: cleanText(q.option_a) },
@@ -168,7 +172,10 @@
                 quizHtml += `
                     <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
                         <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
-                        ${scenarioReasonText ? `<p class="italic text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded">${scenarioReasonText}</p>` : ''}
+                        
+                        ${showScenario && scenarioReasonText ? 
+                            `<p class="text-lg font-semibold italic text-gray-600 mb-4 bg-gray-50 p-3 rounded border-l-4 border-cbse-blue">${scenarioReasonText}</p>` 
+                            : ''}
                         
                         <div class="options space-y-2">
                             ${options.map(opt => `
