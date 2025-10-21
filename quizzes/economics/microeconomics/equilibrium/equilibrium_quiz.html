@@ -144,98 +144,108 @@
 
             renderQuiz();
         }
+function renderQuiz() {
+    const container = document.getElementById('quiz-container');
+    
+    const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
+    const titleDifficulty = displayDifficulty === 'Complex' ? 'Advanced' : displayDifficulty;
 
-        function renderQuiz() {
-            const container = document.getElementById('quiz-container');
-            
-            const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
-            const titleDifficulty = displayDifficulty === 'Complex' ? 'Advanced' : displayDifficulty;
+    let quizHtml = `<h2 class="text-3xl font-extrabold text-cbse-blue mb-6">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
+    
+    QUIZ_DATA.questions.forEach((q, index) => {
+        const questionNumber = index + 1;
+        
+        const questionText = cleanText(q.question_text);
+        
+        // --- SCENARIO/REASON LOGIC (DEBUG VERSION) ---
+        const hasType = ['A&R', 'Case'].includes(q.question_type);
+        const rawText = q.scenario_reason_text;
+        const hasRawText = rawText && rawText.toUpperCase() !== 'N/A';
+        const showScenario = hasType && hasRawText;
 
-            let quizHtml = `<h2 class="text-3xl font-extrabold text-cbse-blue mb-6">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
-            
-            QUIZ_DATA.questions.forEach((q, index) => {
-                const questionNumber = index + 1;
-                
-                const questionText = cleanText(q.question_text);
-                
-                // --- SCENARIO/REASON LOGIC ---
-                const hasType = ['A&R', 'Case'].includes(q.question_type);
-                // Check for raw text content to decide if the box should be rendered
-                const hasRawText = q.scenario_reason_text && q.scenario_reason_text.toUpperCase() !== 'N/A';
-                const showScenario = hasType && hasRawText;
+        const scenarioReasonText = showScenario ? cleanText(rawText) : '';
+        
+        // --- DEBUG OUTPUT BLOCK ---
+        const debugHtml = `
+            <div class="p-2 mb-4 text-xs font-mono bg-yellow-100 border border-yellow-400 rounded">
+                <strong>DEBUG:</strong>
+                Type: ${q.question_type} | 
+                Type Check (A&R/Case): <strong>${hasType}</strong> | 
+                Raw Data (scenario_reason_text): <span class="bg-yellow-200 p-1 rounded">"${rawText}"</span> | 
+                Content Check: <strong>${hasRawText}</strong> | 
+                Show Scenario: <strong>${showScenario}</strong>
+            </div>
+        `;
+        // --- END DEBUG OUTPUT BLOCK ---
+        
+        // --- OPTIONS LOGIC ---
+        let options = [];
 
-                // Clean the text only if we decided to display it
-                const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : '';
-                
-                // --- OPTIONS LOGIC ---
-                let options = [];
-
-                if (q.question_type === 'A&R') {
-                    // For A&R, use all four options, as they contain the full A/B/C/D text
-                    options = [
-                        { key: 'A', text: cleanText(q.option_a) },
-                        { key: 'B', text: cleanText(q.option_b) },
-                        { key: 'C', text: cleanText(q.option_c) },
-                        { key: 'D', text: cleanText(q.option_d) }
-                    ];
-                } else {
-                    // For MCQ/Case, filter out empty options (C, D)
-                    options = [
-                        { key: 'A', text: cleanText(q.option_a) },
-                        { key: 'B', text: cleanText(q.option_b) },
-                        { key: 'C', text: cleanText(q.option_c) },
-                        { key: 'D', text: cleanText(q.option_d) }
-                    ].filter(opt => opt.text !== null && opt.text.trim() !== '');
-                }
-
-                quizHtml += `
-                    <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                        <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
-                        
-                        ${showScenario ? 
-                            `<div class="bg-gray-50 p-4 mb-4 border-l-4 border-cbse-blue rounded shadow-inner">
-                                <p class="text-gray-700 font-normal">
-                                    <strong>${q.question_type === 'A&R' ? 'Reason (R):' : 'Scenario:'}</strong> 
-                                    ${scenarioReasonText}
-                                </p>
-                            </div>` 
-                            : ''}
-                        
-                        <div class="options space-y-2">
-                            ${options.map(opt => `
-                                <label class="block p-3 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150">
-                                    <input 
-                                        type="radio" 
-                                        name="q_${index}" 
-                                        value="${opt.key}" 
-                                        onchange="storeAnswer(${index}, this.value)"
-                                        class="mr-3 text-cbse-blue focus:ring-cbse-blue"
-                                    >
-                                    <span class="font-medium">${opt.key}.</span> ${opt.text}
-                                </label>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            });
-
-            quizHtml += `
-                <button 
-                    id="submit-button"
-                    class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
-                    onclick="submitQuiz()">
-                    Submit Answers
-                </button>
-                <button 
-                    class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
-                    onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
-                    Go Back to Difficulty Selection
-                </button>
-            `;
-
-            container.innerHTML = quizHtml;
+        if (q.question_type === 'A&R') {
+            options = [
+                { key: 'A', text: cleanText(q.option_a) },
+                { key: 'B', text: cleanText(q.option_b) },
+                { key: 'C', text: cleanText(q.option_c) },
+                { key: 'D', text: cleanText(q.option_d) }
+            ];
+        } else {
+            options = [
+                { key: 'A', text: cleanText(q.option_a) },
+                { key: 'B', text: cleanText(q.option_b) },
+                { key: 'C', text: cleanText(q.option_c) },
+                { key: 'D', text: cleanText(q.option_d) }
+            ].filter(opt => opt.text !== null && opt.text.trim() !== '');
         }
 
+        quizHtml += `
+            <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                ${debugHtml}
+                <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
+                
+                ${showScenario ? 
+                    `<div class="bg-gray-50 p-4 mb-4 border-l-4 border-cbse-blue rounded shadow-inner">
+                        <p class="text-gray-700 font-normal">
+                            <strong>${q.question_type === 'A&R' ? 'Reason (R):' : 'Scenario:'}</strong> 
+                            ${scenarioReasonText}
+                        </p>
+                    </div>` 
+                    : ''}
+                
+                <div class="options space-y-2">
+                    ${options.map(opt => `
+                        <label class="block p-3 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150">
+                            <input 
+                                type="radio" 
+                                name="q_${index}" 
+                                value="${opt.key}" 
+                                onchange="storeAnswer(${index}, this.value)"
+                                class="mr-3 text-cbse-blue focus:ring-cbse-blue"
+                            >
+                            <span class="font-medium">${opt.key}.</span> ${opt.text}
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+
+    quizHtml += `
+        <button 
+            id="submit-button"
+            class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
+            onclick="submitQuiz()">
+            Submit Answers
+        </button>
+        <button 
+            class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
+            onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
+            Go Back to Difficulty Selection
+        </button>
+    `;
+
+    container.innerHTML = quizHtml;
+}
+       
         function storeAnswer(qIndex, answerKey) {
             QUIZ_DATA.answers[qIndex] = answerKey;
         }
