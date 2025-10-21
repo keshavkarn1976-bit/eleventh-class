@@ -146,18 +146,26 @@
         // ----------------------------------------------------
         // QUIZ LOGIC - CRITICAL: FIXED NAVIGATION TO RELATIVE PATH
         // ----------------------------------------------------
-        function startQuiz(chapterName) {
-            // TARGET: Introductory Microeconomics, Unit 5, Chapter 3: Demand
-            if (chapterName.trim() === '3. Demand') { 
-                // CRITICAL FIX: Direct navigation using the relative path
-                window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
-                return;
-            }
-            
-            // Logic for ALL other chapters (placeholder alert)
-            const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
-            alert(`Quiz not yet implemented for: ${chapterName}! Target URL: /quizzes/${urlSafeName}.html`);
-        }
+       function startQuiz(chapterName) {
+    
+    // TARGET: Introductory Microeconomics, Unit 5, Chapter 2: Consumer's Equilibrium
+    if (chapterName.trim() === "2. Consumer's Equilibrium") { 
+        // Using the same subdirectory structure as the Demand quiz
+        window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
+        return;
+    }
+    
+    // TARGET: Introductory Microeconomics, Unit 5, Chapter 3: Demand
+    if (chapterName.trim() === '3. Demand') { 
+        // CRITICAL FIX: Direct navigation using the original relative path
+        window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
+        return;
+    }
+    
+    // Logic for ALL other chapters (placeholder alert)
+    const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+    alert(`Quiz not yet implemented for: ${chapterName}! Target URL: /quizzes/${urlSafeName}.html`);
+}
         // ----------------------------------------------------
         // END OF QUIZ LOGIC
         // ----------------------------------------------------
