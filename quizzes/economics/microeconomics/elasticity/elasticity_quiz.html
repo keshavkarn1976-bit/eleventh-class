@@ -172,9 +172,26 @@ function cleanText(text) {
         const questionNumber = index + 1;
         
         const questionText = cleanText(q.question_text);
-        
-        // --- SCENARIO/REASON LOGIC ---
+        const rawQuestionText = q.question_text || '';
         const typeString = q.question_type ? q.question_type.toLowerCase() : '';
+        
+        const isAssertionType = typeString.includes('a&r') || 
+                                typeString.includes('ar') || 
+                                typeString.includes('assertion');
+        let questionText;
+        if (isAssertionType) {
+            // If it's an A/R type, we need to extract only the Assertion (A) part 
+            // and remove the Reason (R) part which is often concatenated in the data.
+            // This is done by splitting at the 'Reason' marker and taking the first part.
+            const assertionPart = rawQuestionText.split(/\*\*Reason \(R\):\*\*/i)[0];
+            
+            // Clean the extracted Assertion text
+            questionText = cleanText(assertionPart);
+            
+        } else {
+            // For all other types (MCQ, Case), use the full text.
+            questionText = cleanText(rawQuestionText);
+        }
         
         // Check if the type includes 'a&r', 'case', or 'assertion'
         const hasType = typeString.includes('a&r') || 
