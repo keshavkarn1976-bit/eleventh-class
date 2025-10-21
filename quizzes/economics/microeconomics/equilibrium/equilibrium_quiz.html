@@ -157,31 +157,24 @@ function renderQuiz() {
         
         const questionText = cleanText(q.question_text);
         
-        // --- SCENARIO/REASON LOGIC (DEBUG VERSION) ---
-        const hasType = ['A&R', 'Case'].includes(q.question_type);
-        const rawText = q.scenario_reason_text;
-        const hasRawText = rawText && rawText.toUpperCase() !== 'N/A';
+        // --- SCENARIO/REASON LOGIC (FIXED) ---
+        // FIX: Use .toLowerCase() and .includes() to handle potential database text variations 
+        // like 'A&R' vs 'Assertion Reasoning' vs 'A&r'
+        const typeString = q.question_type ? q.question_type.toLowerCase() : '';
+        const hasType = typeString.includes('a&r') || typeString.includes('case') || typeString.includes('assertion');
+
+        // Check for raw text content to decide if the box should be rendered
+        const hasRawText = q.scenario_reason_text && q.scenario_reason_text.toUpperCase() !== 'N/A';
         const showScenario = hasType && hasRawText;
 
-        const scenarioReasonText = showScenario ? cleanText(rawText) : '';
-        
-        // --- DEBUG OUTPUT BLOCK ---
-        const debugHtml = `
-            <div class="p-2 mb-4 text-xs font-mono bg-yellow-100 border border-yellow-400 rounded">
-                <strong>DEBUG:</strong>
-                Type: ${q.question_type} | 
-                Type Check (A&R/Case): <strong>${hasType}</strong> | 
-                Raw Data (scenario_reason_text): <span class="bg-yellow-200 p-1 rounded">"${rawText}"</span> | 
-                Content Check: <strong>${hasRawText}</strong> | 
-                Show Scenario: <strong>${showScenario}</strong>
-            </div>
-        `;
-        // --- END DEBUG OUTPUT BLOCK ---
+        // Clean the text only if we decided to display it
+        const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : '';
         
         // --- OPTIONS LOGIC ---
         let options = [];
 
-        if (q.question_type === 'A&R') {
+        if (typeString.includes('a&r') || typeString.includes('assertion')) {
+            // For A&R, use all four options, as they contain the full A/B/C/D text
             options = [
                 { key: 'A', text: cleanText(q.option_a) },
                 { key: 'B', text: cleanText(q.option_b) },
@@ -189,6 +182,7 @@ function renderQuiz() {
                 { key: 'D', text: cleanText(q.option_d) }
             ];
         } else {
+            // For MCQ/Case, filter out empty options (C, D)
             options = [
                 { key: 'A', text: cleanText(q.option_a) },
                 { key: 'B', text: cleanText(q.option_b) },
@@ -199,13 +193,22 @@ function renderQuiz() {
 
         quizHtml += `
             <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                ${debugHtml}
+                
+                <div class="p-2 mb-4 text-xs font-mono bg-yellow-100 border border-yellow-400 rounded">
+                    <strong>DEBUG:</strong>
+                    Type: ${q.question_type} | 
+                    Type Check (A&R/Case): <strong>${hasType}</strong> | 
+                    Raw Data (scenario_reason_text): <span class="bg-yellow-200 p-1 rounded">"${q.scenario_reason_text}"</span> | 
+                    Content Check: <strong>${hasRawText}</strong> | 
+                    Show Scenario: <strong>${showScenario}</strong>
+                </div>
+                
                 <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
                 
                 ${showScenario ? 
                     `<div class="bg-gray-50 p-4 mb-4 border-l-4 border-cbse-blue rounded shadow-inner">
                         <p class="text-gray-700 font-normal">
-                            <strong>${q.question_type === 'A&R' ? 'Reason (R):' : 'Scenario:'}</strong> 
+                            <strong>${typeString.includes('assertion') ? 'Reason (R):' : 'Scenario:'}</strong> 
                             ${scenarioReasonText}
                         </p>
                     </div>` 
