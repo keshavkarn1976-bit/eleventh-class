@@ -159,7 +159,6 @@ function cleanText(text) {
 
             renderQuiz();
         }
-
         function renderQuiz() {
     const container = document.getElementById('quiz-container');
     
@@ -171,21 +170,19 @@ function cleanText(text) {
     QUIZ_DATA.questions.forEach((q, index) => {
         const questionNumber = index + 1;
         
-        const questionText = cleanText(q.question_text);
         const rawQuestionText = q.question_text || '';
         const typeString = q.question_type ? q.question_type.toLowerCase() : '';
         
+        // --- ASSERTION CHECK ---
         const isAssertionType = typeString.includes('a&r') || 
                                 typeString.includes('ar') || 
                                 typeString.includes('assertion');
-        let questionText;
+
+        // --- QUESTION TEXT FIX (Removing Reason from the Question) ---
+        let questionText; 
         if (isAssertionType) {
-            // If it's an A/R type, we need to extract only the Assertion (A) part 
-            // and remove the Reason (R) part which is often concatenated in the data.
-            // This is done by splitting at the 'Reason' marker and taking the first part.
+            // Split at the 'Reason (R):' marker (case-insensitive, handles various markdown)
             const assertionPart = rawQuestionText.split(/\*\*Reason \(R\):\*\*/i)[0];
-            
-            // Clean the extracted Assertion text
             questionText = cleanText(assertionPart);
             
         } else {
@@ -193,11 +190,10 @@ function cleanText(text) {
             questionText = cleanText(rawQuestionText);
         }
         
-        // Check if the type includes 'a&r', 'case', or 'assertion'
-        const hasType = typeString.includes('a&r') || 
-                        typeString.includes('ar') || 
-                        typeString.includes('case') || 
-                        typeString.includes('assertion');
+        // --- SCENARIO/REASON BLOCK LOGIC ---
+        // Includes 'ar' for the robust type check fix
+        const hasType = isAssertionType || 
+                        typeString.includes('case'); 
 
         // Check for raw text content (not null, not an empty string, and not 'N/A')
         const hasRawText = q.scenario_reason_text && 
@@ -210,16 +206,15 @@ function cleanText(text) {
         const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : '';
         
         // =================================================================
-        // 🚨 TEMPORARY DEBUG LOG 🚨
-        // This will tell you exactly why the scenario is or isn't showing.
-        console.log(`DEBUG Q${questionNumber}: Type: ${q.question_type} | hasType: ${hasType} | Raw Data (scenario_reason_text): "${q.scenario_reason_text}" | hasRawText: ${hasRawText} | showScenario: ${showScenario}`);
+        // 🚨 TEMPORARY DEBUG LOG 🚨 (KEEP THIS UNTIL YOU VERIFY THE FIX)
+        console.log(`DEBUG Q${questionNumber}: Type: ${q.question_type} | isAssertionType: ${isAssertionType} | hasType: ${hasType} | Raw Data (scenario_reason_text): "${q.scenario_reason_text}" | hasRawText: ${hasRawText} | showScenario: ${showScenario}`);
         // =================================================================
 
         // --- OPTIONS LOGIC ---
         let options = [];
 
-        if (typeString.includes('a&r') || typeString.includes('assertion')) {
-            // For A&R, use all four options
+        // Check for A&R/Assertion types to determine option filtering (use ALL 4 for A&R)
+        if (isAssertionType) {
             options = [
                 { key: 'A', text: cleanText(q.option_a) },
                 { key: 'B', text: cleanText(q.option_b) },
@@ -241,7 +236,7 @@ function cleanText(text) {
                 <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
                 
                 ${showScenario ? 
-                    // Added the label back for clarity (Reason (R):)
+                    // This block displays the scenario/reason text (Only if showScenario is true)
                     `<div class="bg-gray-50 p-3 mb-4 shadow-inner border-l-4 border-cbse-blue">
                         <p class="text-base font-normal text-gray-800">
                             <span class="font-bold text-cbse-blue">Reason (R):</span> ${scenarioReasonText}
@@ -283,7 +278,7 @@ function cleanText(text) {
 
     container.innerHTML = quizHtml;
 }
-
+       
         function storeAnswer(qIndex, answerKey) {
             QUIZ_DATA.answers[qIndex] = answerKey;
         }
