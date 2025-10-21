@@ -238,6 +238,8 @@ function cleanText(text) {
     });
 
     quizHtml += `
+    // Add this line back temporarily:
+console.log(`DEBUG: Type: ${q.question_type} | Type Check (hasType): ${hasType} | Raw Data (scenario_reason_text): "${q.scenario_reason_text}" | Content Check (hasRawText): ${hasRawText} | Show Scenario: ${showScenario}`);
         <button 
             id="submit-button"
             class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
