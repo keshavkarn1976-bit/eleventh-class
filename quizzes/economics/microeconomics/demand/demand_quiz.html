@@ -5,24 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demand Chapter Quiz</title>
     
-    <link rel="stylesheet" href="./quiz_styles.css"> 
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script> 
 
-    <script src="./js/config.js"></script> 
+    <script src="../../../js/config.js"></script> 
 
     <script>
         // Check if credentials are now loaded
         const configError = document.getElementById('config-error');
 
         if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
-            // Check if the DOM element exists before trying to read 'style' (fixes TypeError)
+            // Configuration failed (either config.js 404'd or the variables aren't defined)
             if (configError) {
                 configError.style.display = 'block';
             }
             console.error("Configuration failed: Supabase keys are missing or config.js failed to load.");
         } else {
-            // Supabase initialization (assuming this is your initialization code)
+            // Supabase initialization
             const supabase = supabase.createClient(
                 window.SUPABASE_URL,
                 window.SUPABASE_ANON_KEY
@@ -31,7 +29,6 @@
             console.log("Supabase client initialized successfully. Attempting to fetch quiz data.");
             
             // Call the function to fetch quiz data
-            // This function is defined below, ensuring it runs only after Supabase is initialized
             fetchQuizData(supabase); 
         }
         
@@ -39,30 +36,30 @@
         async function fetchQuizData(supabaseClient) {
             const quizContainer = document.getElementById('quiz-container');
             
-            // Example Query - REPLACE 'quiz_questions' with your ACTUAL Supabase table name
-            // If the table name is correct, the RLS policy is the next failure point.
+            // ⚠️ IMPORTANT: REPLACE 'quiz_questions' with your ACTUAL Supabase table name
             const { data: quizData, error } = await supabaseClient
                 .from('quiz_questions') 
                 .select('*');
 
             if (error) {
                 console.error('Supabase Query Error:', error);
+                // Displays specific error details on the page
                 if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">Error: Could not retrieve questions. Check console for RLS or network errors!</p>`;
+                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for RLS or network details!</p>`;
                 }
                 return;
             }
 
             if (quizData && quizData.length > 0) {
                 console.log('Quiz data loaded successfully!', quizData);
-                // SUCCESS: Now, insert the actual quiz rendering code here
+                // SUCCESS: Connection and RLS policy are working!
                 if (quizContainer) {
                      quizContainer.innerHTML = `<p class="text-green-600 font-bold">SUCCESS! Loaded ${quizData.length} questions. Now insert quiz rendering logic.</p>`;
                 }
             } else {
-                // This means the table is empty or RLS is blocking the query (401/403)
+                // If the connection worked but data didn't return
                 if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">No questions found. Check your table name and the Supabase Row Level Security (RLS) policy.</p>`;
+                    quizContainer.innerHTML = `<p class="error-message">No questions found. The table is empty or the Row Level Security (RLS) policy is blocking access.</p>`;
                 }
             }
         }
@@ -70,7 +67,7 @@
     </script>
     
     <style>
-        /* Add some basic styles here if not using an external CSS file */
+        /* Basic styling is included here to ensure the page is readable */
         body { font-family: sans-serif; padding: 20px; background-color: #f8f8f8; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         h1 { color: #1a3e6a; border-bottom: 2px solid #1a3e6a; padding-bottom: 10px; margin-bottom: 20px; }
