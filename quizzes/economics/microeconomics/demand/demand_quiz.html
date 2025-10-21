@@ -1,478 +1,56 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Economics Quiz</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <script src="js/config.js"></script> 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script type="text/javascript" id="MathJax-script" async
-        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
-    </script>
+    <title>Demand Chapter Quiz</title>
+    <link rel="stylesheet" href="quiz_styles.css"> 
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script> 
+
+    <script src="./config.js"></script> 
+
     <script>
-        // Configure MathJax to process LaTeX enclosed in single dollar signs
-        MathJax = {
-            tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']]
-            }
-        };
-    </script>
+        // Check if credentials are now loaded
+        if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
+            document.getElementById('config-error').style.display = 'block';
+            console.error("Configuration failed: Supabase keys are missing or config.js failed to load.");
+        } else {
+            // This is where your Supabase initialization and Quiz Logic goes
+            // The code that was previously failing should now work here:
+            
+            const supabase = supabase.createClient(
+                window.SUPABASE_URL,
+                window.SUPABASE_ANON_KEY
+            );
+            
+            // Start Quiz Logic...
+            console.log("Supabase client initialized successfully. Starting quiz load.");
+        }
+        
+    </script> 
+    
     <style>
-        .correct-answer {
-            background-color: #d1fae5; /* Green 100 */
-            border-color: #10b981 !important; /* Green 500 */
-            color: #065f46; /* Green 800 */
-            font-weight: bold;
-        }
-        .user-incorrect {
-            background-color: #fee2e2; /* Red 100 */
-            border-color: #ef4444 !important; /* Red 500 */
-            color: #991b1b; /* Red 800 */
-        }
-        .cbse-blue {
-            background-color: #3b82f6; /* Blue 500 - used for selected options */
-        }
-        /* Ensure MathJax content is styled correctly */
-        .MathJax {
-            font-size: 100%;
-        }
+        /* Add some basic styles here if not using an external CSS file */
+        body { font-family: sans-serif; padding: 20px; background-color: #f8f8f8; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #1a3e6a; border-bottom: 2px solid #1a3e6a; padding-bottom: 10px; margin-bottom: 20px; }
+        .error-message { color: #dc2626; border: 1px solid #dc2626; padding: 15px; background: #fee2e2; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-start justify-center p-8">
+<body>
 
-    <div id="quiz-container" class="w-full">
+    <div class="container">
+        <h1>CBSE Class 11 Microeconomics: Demand Quiz</h1>
+        
+        <div id="quiz-container">
+            <p>Loading quiz questions from Supabase...</p>
         </div>
 
-    <script type="text/babel">
-        const { createClient } = supabase;
-        
-        const SUPABASE_URL = window.SUPABASE_URL; 
-        const SUPABASE_KEY = window.SUPABASE_ANON_KEY; 
+        <div id="config-error" class="error-message" style="display:none;">
+            Configuration Error 🛑<br>Quiz failed to load because Supabase credentials are missing or the 'config.js' file could not be found.
+        </div>
+    </div>
 
-        if (!SUPABASE_URL || !SUPABASE_KEY) {
-            const renderConfigError = () => (
-                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
-                    <h1 className="text-4xl font-extrabold text-red-600 mb-4">Configuration Error 🛑</h1>
-                    <p className="text-xl text-gray-700">Quiz failed to load because Supabase credentials are missing.</p>
-                    <p className="text-sm text-gray-500 mt-4">Please check that 'config.js' is correctly defining window.SUPABASE_URL and window.SUPABASE_ANON_KEY.</p>
-                </div>
-            );
-            ReactDOM.createRoot(document.getElementById('quiz-container')).render(renderConfigError());
-            throw new Error("Supabase configuration missing. Check console for details.");
-        }
-
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
-        const { useState, useEffect, useCallback, useMemo } = React;
-        
-        // Helper component to render LaTeX and re-render MathJax
-        const LatexContent = ({ content }) => {
-            const contentRef = React.useRef(null);
-
-            React.useEffect(() => {
-                if (contentRef.current && window.MathJax) {
-                    window.MathJax.typeset([contentRef.current]);
-                }
-                return () => {
-                    // FIX: Ensure contentRef.current is not null before using it in cleanup
-                    if (contentRef.current && window.MathJax) {
-                        window.MathJax.typesetClear([contentRef.current]);
-                    }
-                };
-            }, [content]); 
-
-            return <div ref={contentRef} dangerouslySetInnerHTML={{ __html: content }} />;
-        };
-
-        const difficultyMap = {
-            'Simple': 'simple',
-            'Intermediate': 'medium',
-            'Advanced': 'complex'
-        };
-
-        const App = () => {
-            const [selectedDifficulty, setSelectedDifficulty] = useState(null);
-            const [quizQuestions, setQuizQuestions] = useState([]);
-            const [userAnswers, setUserAnswers] = useState([]);
-            const [quizStatus, setQuizStatus] = useState('initial'); 
-            const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-            const [score, setScore] = useState(0);
-
-            const totalQuestions = quizQuestions.length;
-            
-            // --- Handlers ---
-            const setDifficulty = (difficulty) => {
-                setSelectedDifficulty(difficulty);
-                setQuizStatus('loading');
-                fetchQuestions(difficultyMap[difficulty]);
-            };
-
-            const fetchQuestions = async (difficultyValue) => {
-                const { data: rawQuestions, error: dbError } = await supabaseClient
-                    .from('demand_mcqs_v2') 
-                    .select('id, q_no, question_type, scenario_reason_text, question_text, option_a, option_b, option_c, option_d, correct_answer_key, difficulty')
-                    .eq('difficulty', difficultyValue) 
-                    .order('q_no', { ascending: true }) 
-                    .limit(20); 
-                
-                if (dbError) {
-                    console.error('Error fetching questions:', dbError);
-                    setQuizStatus('initial');
-                    alert(`Error loading quiz data. RLS check: ${dbError.message}`);
-                    return;
-                }
-
-                if (rawQuestions.length === 0) {
-                     console.warn(`No questions found for difficulty: ${difficultyValue}`);
-                     setQuizStatus('initial');
-                     alert('No questions found for this difficulty. Check data/filters.');
-                     return;
-                }
-
-                const transformedQuestions = rawQuestions.map(q => ({
-                    id: q.id,
-                    q_no: q.q_no, 
-                    question_type: q.question_type,
-                    scenario_reason_text: q.scenario_reason_text,
-                    question_text: q.question_text,
-                    options: [q.option_a, q.option_b, q.option_c, q.option_d].filter(o => o),
-                    correct_answer_index: q.correct_answer_key ? q.correct_answer_key.toUpperCase().charCodeAt(0) - 'A'.charCodeAt(0) : null
-                }));
-
-                setQuizQuestions(transformedQuestions);
-                setUserAnswers([]);
-                setCurrentQuestionIndex(0);
-                setQuizStatus('active');
-            };
-
-            const handleOptionSelect = (optionIndex) => {
-                const currentQuestionId = quizQuestions[currentQuestionIndex].id;
-                setUserAnswers(prevAnswers => {
-                    const existingIndex = prevAnswers.findIndex(a => a.questionId === currentQuestionId);
-                    const newAnswer = { questionId: currentQuestionId, selectedOptionIndex: optionIndex };
-                    if (existingIndex > -1) {
-                        return prevAnswers.map((a, index) => index === existingIndex ? newAnswer : a);
-                    } else {
-                        return [...prevAnswers, newAnswer];
-                    }
-                });
-            };
-            
-            const handleNavigation = (direction) => {
-                const newIndex = currentQuestionIndex + direction;
-                if (newIndex >= 0 && newIndex < totalQuestions) {
-                    setCurrentQuestionIndex(newIndex);
-                }
-            };
-            
-            const handleSubmitQuiz = () => {
-                let finalScore = 0;
-                userAnswers.forEach(userAns => {
-                    const question = quizQuestions.find(q => q.id === userAns.questionId);
-                    if (question && userAns.selectedOptionIndex === question.correct_answer_index) {
-                        finalScore++;
-                    }
-                });
-                setScore(finalScore);
-                setQuizStatus('completed');
-            };
-
-
-            // ----------------------------------------------------
-            // 3. RENDERING COMPONENTS (ACTIVE MODE)
-            // ----------------------------------------------------
-            
-            const renderDifficultySelection = () => (
-                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-8">
-                        Select Quiz Difficulty
-                    </h1>
-                    <div className="space-y-4">
-                        {Object.keys(difficultyMap).map(key => (
-                            <button
-                                key={key}
-                                onClick={() => setDifficulty(key)}
-                                className="w-full py-4 text-xl rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition duration-300 shadow-lg"
-                            >
-                                {key}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            );
-            
-            const renderActiveQuiz = () => {
-                const q = quizQuestions[currentQuestionIndex];
-                if (!q) return <div className="text-center p-8 text-gray-500">Error: Question not found.</div>;
-
-                const currentSelected = userAnswers.find(a => a.questionId === q.id)?.selectedOptionIndex;
-                const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
-                
-                // --- Dynamic Content Setup ---
-                let primaryLabel = 'Question:';       
-                let secondaryLabel = 'Context:';      
-                let secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
-                
-                let secondaryContent = q.scenario_reason_text;
-                let primaryContent = q.question_text; 
-
-                let showSecondaryBox = secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
-                
-                if (q.question_type === 'A&R') {
-                    // A is in question_text (primary content area)
-                    primaryLabel = 'Assertion (A):'; 
-                    primaryContent = primaryContent.replace(/\*\*Assertion \(A\)\:\*\* ?/i, '').trim(); 
-                    
-                    // R is in scenario_reason_text (secondary content area)
-                    secondaryLabel = 'Reasoning (R):'; 
-                    secondaryContent = secondaryContent.replace(/\*\*Reason \(R\)\:\*\* ?/i, '').trim(); 
-                    
-                    secondaryBoxStyle = 'bg-yellow-50 border-yellow-400'; 
-                    showSecondaryBox = true; 
-                } 
-                
-                if (q.question_type === 'Case') {
-                    primaryLabel = 'Question:';
-                    secondaryLabel = 'Case Data/Scenario:';
-                    secondaryBoxStyle = 'bg-blue-50 border-blue-400';
-                    showSecondaryBox = true;
-                }
-                
-                // HIDE the secondary box if it's a pure MCQ
-                if (q.question_type === 'MCQ') {
-                    showSecondaryBox = false;
-                }
-
-                return (
-                    <div className="bg-white p-8 rounded-xl shadow-2xl border border-gray-100 max-w-4xl w-full mx-auto">
-                        
-                        <h2 className="text-2xl font-extrabold text-gray-800 mb-6 border-b pb-4">
-                            Question {currentQuestionIndex + 1} of {totalQuestions} ({selectedDifficulty})
-                            {q.question_type && <span className="text-lg font-normal ml-3 text-gray-500">({q.question_type})</span>}
-                        </h2>
-
-                        {/* --- 1. PRIMARY QUESTION/ASSERTION TEXT (question_text) --- */}
-                        <p className="text-lg font-medium mb-4 text-gray-700">
-                            <span className="font-semibold text-blue-600 mr-2">{primaryLabel}</span>
-                            <LatexContent content={primaryContent} />
-                        </p>
-                        
-                        {/* --- 2. SECONDARY CONTEXT/REASONING/CASE DATA BOX (scenario_reason_text) --- */}
-                        {showSecondaryBox && (
-                            <div className={`mb-6 p-4 border-l-4 ${secondaryBoxStyle}`}>
-                                <p className="font-semibold text-sm text-gray-800 mb-2">
-                                    {secondaryLabel}
-                                </p>
-                                <LatexContent content={secondaryContent} /> 
-                            </div>
-                        )}
-                        
-                        <div className="space-y-4 pt-4 border-t border-gray-100">
-                            {q.options.map((option, index) => {
-                                const isSelected = currentSelected === index;
-                                return (
-                                    <button
-                                        key={index}
-                                        onClick={() => handleOptionSelect(index)}
-                                        className={`w-full text-left p-4 rounded-lg transition-all duration-200 border-2
-                                            ${isSelected 
-                                                ? 'bg-blue-600 text-white shadow-md border-blue-600 scale-[1.01]' 
-                                                : 'bg-gray-50 text-gray-800 hover:bg-blue-50 hover:border-blue-300 border-gray-200'
-                                            }
-                                        `}
-                                    >
-                                        <span className="font-bold mr-3">{String.fromCharCode(65 + index)}.</span> 
-                                        <LatexContent content={option} />
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Navigation and Submission */}
-                        <div className="mt-10 flex justify-between items-center pt-6 border-t">
-                            <button
-                                onClick={() => handleNavigation(-1)}
-                                disabled={currentQuestionIndex === 0}
-                                className="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 disabled:opacity-50 transition duration-150"
-                            >
-                                Previous
-                            </button>
-                            {isLastQuestion ? (
-                                <button
-                                    onClick={handleSubmitQuiz}
-                                    className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition duration-150 shadow-md"
-                                >
-                                    Submit Quiz
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => handleNavigation(1)}
-                                    className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition duration-150 shadow-md"
-                                >
-                                    Next
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                );
-            };
-
-            // ----------------------------------------------------
-            // 4. RENDERING COMPONENTS (COMPLETION/REVIEW)
-            // ----------------------------------------------------
-
-            const renderCompletionResults = () => (
-                <div className="text-center p-12 bg-white rounded-xl shadow-2xl max-w-lg mx-auto">
-                    <h1 className="text-4xl font-extrabold text-gray-900 mb-4">Quiz Submitted!</h1>
-                    <p className="text-xl text-gray-700 mb-8">Your final score is:</p>
-                    <div className="text-6xl font-bold text-green-600 mb-10">
-                        {score} / {totalQuestions}
-                    </div>
-                    <div className="space-y-4">
-                        <button
-                            // FIX: Corrected onClick handler to properly set the review status
-                            onClick={() => setQuizStatus('review')} 
-                            className="w-full py-3 text-lg rounded-lg bg-indigo-600 text-white font-semibold hover:bg-indigo-700 transition duration-300"
-                        >
-                            Review All Answers
-                        </button>
-                        <button
-                            onClick={() => setQuizStatus('initial')}
-                            className="w-full py-3 text-lg rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition duration-300"
-                        >
-                            Select New Difficulty
-                        </button>
-                    </div>
-                </div>
-            );
-
-            const renderReviewMode = () => (
-                <div className="bg-white p-8 rounded-xl shadow-2xl max-w-4xl w-full mx-auto">
-                    <h1 className="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-4">
-                        Review: {selectedDifficulty} Quiz
-                    </h1>
-                    
-                    <div className="space-y-12">
-                        {quizQuestions.map((q, qIndex) => {
-                            const userAns = userAnswers.find(a => a.questionId === q.id);
-                            const selectedIndex = userAns ? userAns.selectedOptionIndex : -1;
-                            
-                            // --- Dynamic Content Setup for Review ---
-                            let primaryLabel = 'Question:';
-                            let secondaryLabel = 'Context:';
-                            let secondaryBoxStyle = 'bg-gray-100 border-gray-300';
-                            
-                            let secondaryContent = q.scenario_reason_text;
-                            let primaryContent = q.question_text; 
-                            
-                            let showSecondaryBox = secondaryContent && secondaryContent.toLowerCase() !== 'n/a';
-                        
-                            if (q.question_type === 'A&R') {
-                                // A is in question_text (primary content area)
-                                primaryLabel = 'Assertion (A):'; 
-                                primaryContent = primaryContent.replace(/\*\*Assertion \(A\)\:\*\* ?/i, '').trim(); 
-                                
-                                // R is in scenario_reason_text (secondary content area)
-                                secondaryLabel = 'Reasoning (R):'; 
-                                secondaryContent = secondaryContent.replace(/\*\*Reason \(R\)\:\*\* ?/i, '').trim(); 
-                                
-                            } else if (q.question_type === 'Case') {
-                                secondaryLabel = 'Case Data/Scenario:';
-                                primaryLabel = 'Question:'; 
-                                secondaryBoxStyle = 'bg-blue-50 border-blue-400';
-                            }
-                            
-                            // HIDE the secondary box if it's a pure MCQ
-                            if (q.question_type === 'MCQ') {
-                                showSecondaryBox = false;
-                            }
-                            
-                            return (
-                                <div key={q.id} className="border p-6 rounded-xl shadow-sm">
-                                    <h3 className="text-xl font-semibold mb-4 text-gray-800">
-                                        Q{qIndex + 1}. ({q.question_type})
-                                    </h3>
-                                    
-                                    {/* --- 1. PRIMARY QUESTION/ASSERTION TEXT (question_text) --- */}
-                                    <p className="text-lg mb-4 text-gray-700">
-                                        <span className="font-bold text-blue-600 mr-2">{primaryLabel}</span>
-                                        <LatexContent content={primaryContent} />
-                                    </p>
-
-                                    {/* --- 2. SECONDARY CONTEXT/REASONING/CASE DATA BOX (scenario_reason_text) --- */}
-                                    {showSecondaryBox && (
-                                        <div className={`mb-4 p-3 border-l-4 ${secondaryBoxStyle}`}>
-                                            <p className="font-semibold text-sm text-gray-700 mb-1">
-                                                {secondaryLabel}
-                                            </p>
-                                            <LatexContent content={secondaryContent} />
-                                        </div>
-                                    )}
-                                    
-                                    <div className="space-y-2 pt-4 border-t border-gray-100">
-                                        {q.options.map((option, index) => {
-                                            const optionKey = String.fromCharCode(65 + index);
-                                            const isSelected = selectedIndex === index;
-                                            const isCorrect = index === q.correct_answer_index;
-                                            
-                                            let className = 'w-full text-left p-3 rounded-lg border-2 text-gray-800';
-
-                                            if (isCorrect) {
-                                                className += ' correct-answer';
-                                            } else if (isSelected && !isCorrect) {
-                                                className += ' user-incorrect';
-                                            } else {
-                                                className += ' bg-gray-50 border-gray-200';
-                                            }
-
-                                            return (
-                                                <div key={index} className={className}>
-                                                    <span className="font-bold mr-3">{optionKey}.</span> 
-                                                    <LatexContent content={option} />
-                                                    {isCorrect && <span className="ml-3 text-sm font-bold">(Correct Answer)</span>}
-                                                    {isSelected && !isCorrect && <span className="ml-3 text-sm font-bold">(Your Answer)</span>}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                    
-                    <button
-                        onClick={() => setQuizStatus('initial')}
-                        className="mt-10 py-3 px-8 text-lg rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition duration-300"
-                    >
-                        Start New Quiz
-                    </button>
-                </div>
-            );
-
-            // --- 5. Main App Router ---
-            switch (quizStatus) {
-                case 'active':
-                    return renderActiveQuiz();
-                case 'completed':
-                    return renderCompletionResults();
-                case 'review':
-                    return renderReviewMode();
-                case 'loading':
-                    return <div className="text-center p-12 text-xl font-semibold text-blue-600">Loading questions...</div>;
-                default:
-                    return renderDifficultySelection(); 
-            }
-        };
-
-        // Initialize React app
-        ReactDOM.createRoot(document.getElementById('quiz-container')).render(<App />);
-
-    </script>
 </body>
 </html>
