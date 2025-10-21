@@ -59,6 +59,37 @@
             const shuffled = array.sort(() => 0.5 - Math.random());
             return shuffled.slice(0, count);
         }
+        
+        // UTILITY FIX: Cleans up formatting from Supabase data fields
+        function cleanText(text) {
+            if (!text) return '';
+            
+            // 1. Convert LaTeX price/value notation to clean HTML/text
+            // Replaces $\text{50}$, $\text{₹}5$ etc. with clean text
+            let cleaned = text
+                .replace(/\$\\(text)\{([^\}]+)\}\$|\\text\{([^\}]+)\}|(\\\$)|(\\\\)|(\text\{[^\}]+\})/g, (match, p1, p2, p3) => {
+                    // Check for $...$ around \text{}
+                    const matchText = match.match(/\\text\{([^\}]+)\}/);
+                    if (matchText) return matchText[1]; 
+
+                    // Check for just \$
+                    if (match === '\\$') return '₹'; 
+                    
+                    // Check for \\
+                    if (match === '\\\\') return '<br>'; 
+                    
+                    return match;
+                })
+                .replace(/\$/g, '') // Remove any remaining stray $ signs
+                .replace(/\\(left|right)[\(\)\|\{\}]/g, ''); // Removes LaTeX sizing/bracket commands
+
+            // 2. Convert Markdown bolding to HTML bolding
+            // Replaces **word** with <strong>word</strong>
+            cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            return cleaned;
+        }
+
 
         // --- Core Quiz State Management ---
 
@@ -122,17 +153,22 @@
             
             QUIZ_DATA.questions.forEach((q, index) => {
                 const questionNumber = index + 1;
+                
+                // Use the cleanText utility on all text fields before rendering
+                const questionText = cleanText(q.question_text);
+                const scenarioReasonText = cleanText(q.scenario_reason_text);
+
                 const options = [
-                    { key: 'A', text: q.option_a },
-                    { key: 'B', text: q.option_b },
-                    { key: 'C', text: q.option_c },
-                    { key: 'D', text: q.option_d }
-                ].filter(opt => opt.text !== null); // Filter out null options (e.g., if only A and B are present)
+                    { key: 'A', text: cleanText(q.option_a) },
+                    { key: 'B', text: cleanText(q.option_b) },
+                    { key: 'C', text: cleanText(q.option_c) },
+                    { key: 'D', text: cleanText(q.option_d) }
+                ].filter(opt => opt.text !== null && opt.text.trim() !== ''); // Filter out null/empty options
 
                 quizHtml += `
                     <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                        <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${q.question_text}</p>
-                        ${q.scenario_reason_text ? `<p class="italic text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded">${q.scenario_reason_text}</p>` : ''}
+                        <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
+                        ${scenarioReasonText ? `<p class="italic text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded">${scenarioReasonText}</p>` : ''}
                         
                         <div class="options space-y-2">
                             ${options.map(opt => `
@@ -268,7 +304,7 @@
             }
 
             if (quizData && quizData.length > 0) {
-                console.log(`Quiz data loaded successfully! (${quizData.length})`, quizData);
+                console.log(`Quiz data loaded successfully! Array(${quizData.length})`, quizData);
                 // SUCCESS: Render the initial difficulty selection screen
                 renderDifficultySelection(quizData);
             } else {
