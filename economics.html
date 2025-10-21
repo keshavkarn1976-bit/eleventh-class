@@ -116,7 +116,7 @@
     </footer>
 
     <script>
-        // Data Structure for all three books (No change from previous version)
+        // Data Structure for all three books
         const bookData = {
             'Stats': [
                 { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
@@ -144,20 +144,21 @@
         });
 
         // ----------------------------------------------------
-        // QUIZ LOGIC - CRITICAL: UPDATED TO CALL demand_quiz.html
+        // QUIZ LOGIC - CRITICAL: FIXED NAVIGATION TO demand_quiz.html
         // ----------------------------------------------------
         function startQuiz(chapterName) {
-            // **UPDATED LOGIC**: Targets "3. Demand" and calls the new file.
+            // TARGET: Introductory Microeconomics, Unit 5, Chapter 3: Demand
             if (chapterName.trim() === '3. Demand') { 
-                alert("Launching the FANTASTIC working Demand Quiz! (URL: /quizzes/demand_quiz.html)");
-                // In a real application, you would use: window.location.href = '/quizzes/demand_quiz.html';
+                // FIX: Direct navigation to the renamed quiz file
+                window.location.href = '/quizzes/demand_quiz.html';
                 return;
             }
             
-            // Replicated logic for ALL other chapters
+            // Logic for ALL other chapters (still uses an alert as a placeholder)
             const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
-            alert(`Launching Quiz for: ${chapterName}! (URL: /quizzes/${urlSafeName}.html)`);
-            // In a real application, you would use: window.location.href = `/quizzes/${urlSafeName}.html`;
+            alert(`Quiz not yet implemented for: ${chapterName}! Target URL: /quizzes/${urlSafeName}.html`);
+            // When ready, replace the alert above with:
+            // window.location.href = `/quizzes/${urlSafeName}.html`;
         }
         // ----------------------------------------------------
         // END OF QUIZ LOGIC
