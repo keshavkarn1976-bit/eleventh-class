@@ -157,9 +157,7 @@ function renderQuiz() {
         
         const questionText = cleanText(q.question_text);
         
-        // --- SCENARIO/REASON LOGIC (FIXED) ---
-        // FIX: Use .toLowerCase() and .includes() to handle potential database text variations 
-        // like 'A&R' vs 'Assertion Reasoning' vs 'A&r'
+        // --- SCENARIO/REASON LOGIC ---
         const typeString = q.question_type ? q.question_type.toLowerCase() : '';
         const hasType = typeString.includes('a&r') || typeString.includes('case') || typeString.includes('assertion');
 
@@ -168,13 +166,13 @@ function renderQuiz() {
         const showScenario = hasType && hasRawText;
 
         // Clean the text only if we decided to display it
+        // The cleanText function will convert **Reason (R):** to <strong>Reason (R):</strong>
         const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : '';
         
         // --- OPTIONS LOGIC ---
         let options = [];
 
         if (typeString.includes('a&r') || typeString.includes('assertion')) {
-            // For A&R, use all four options, as they contain the full A/B/C/D text
             options = [
                 { key: 'A', text: cleanText(q.option_a) },
                 { key: 'B', text: cleanText(q.option_b) },
@@ -182,7 +180,6 @@ function renderQuiz() {
                 { key: 'D', text: cleanText(q.option_d) }
             ];
         } else {
-            // For MCQ/Case, filter out empty options (C, D)
             options = [
                 { key: 'A', text: cleanText(q.option_a) },
                 { key: 'B', text: cleanText(q.option_b) },
@@ -191,24 +188,30 @@ function renderQuiz() {
             ].filter(opt => opt.text !== null && opt.text.trim() !== '');
         }
 
+        // --- DEBUG OUTPUT BLOCK (For your reference) ---
+        const debugHtml = `
+            <div class="p-2 mb-4 text-xs font-mono bg-yellow-100 border border-yellow-400 rounded">
+                <strong>DEBUG:</strong>
+                Type: ${q.question_type} | 
+                Type Check (A&R/Case): <strong>${hasType}</strong> | 
+                Raw Data (scenario_reason_text): <span class="bg-yellow-200 p-1 rounded">"${q.scenario_reason_text}"</span> | 
+                Content Check: <strong>${hasRawText}</strong> | 
+                Show Scenario: <strong>${showScenario}</strong>
+            </div>
+        `;
+        // --- END DEBUG OUTPUT BLOCK ---
+
         quizHtml += `
             <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                
-                <div class="p-2 mb-4 text-xs font-mono bg-yellow-100 border border-yellow-400 rounded">
-                    <strong>DEBUG:</strong>
-                    Type: ${q.question_type} | 
-                    Type Check (A&R/Case): <strong>${hasType}</strong> | 
-                    Raw Data (scenario_reason_text): <span class="bg-yellow-200 p-1 rounded">"${q.scenario_reason_text}"</span> | 
-                    Content Check: <strong>${hasRawText}</strong> | 
-                    Show Scenario: <strong>${showScenario}</strong>
-                </div>
-                
                 <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
                 
                 ${showScenario ? 
-                    `<div class="bg-gray-50 p-4 mb-4 border-l-4 border-cbse-blue rounded shadow-inner">
-                        <p class="text-gray-700 font-normal">
-                            <strong>${typeString.includes('assertion') ? 'Reason (R):' : 'Scenario:'}</strong> 
+                    // FIXES: Removed border-l-4 border-cbse-blue and rounded.
+                    // FIXES: Adjusted padding to be minimal (p-2) and kept the background light gray.
+                    // FIXES: Removed the hardcoded <strong> tag for "Reason (R):" / "Scenario:", 
+                    //        as it's included in the cleanText output.
+                    `<div class="bg-gray-50 p-3 mb-4 shadow-inner">
+                        <p class="text-lg font-normal text-gray-800">
                             ${scenarioReasonText}
                         </p>
                     </div>` 
