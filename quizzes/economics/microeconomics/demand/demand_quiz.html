@@ -14,22 +14,22 @@
         const configError = document.getElementById('config-error');
 
         if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
-            // If this error shows, it means the absolute path also failed.
+            // Configuration failed (config.js likely still has a path/casing error)
             if (configError) {
                 configError.style.display = 'block';
             }
-            console.error("Configuration failed: The absolute path /eleventh-class/js/config.js failed. Check file capitalization and existence.");
+            console.error("Configuration failed: The absolute path /eleventh-class/js/config.js failed. Please check file capitalization.");
         } else {
-            // Supabase initialization
-            const supabase = supabase.createClient(
+            // FIX: Use 'supabaseClient' variable to avoid the ReferenceError conflict.
+            const supabaseClient = supabase.createClient(
                 window.SUPABASE_URL,
                 window.SUPABASE_ANON_KEY
             );
             
             console.log("Supabase client initialized successfully. Attempting to fetch quiz data.");
             
-            // Call the function to fetch quiz data
-            fetchQuizData(supabase); 
+            // Pass the initialized client to the fetch function
+            fetchQuizData(supabaseClient); 
         }
         
         // Function to fetch and display quiz data
@@ -43,23 +43,23 @@
 
             if (error) {
                 console.error('Supabase Query Error:', error);
+                // Displays query error details on the page
                 if (quizContainer) {
-                    // Check for 401/403 errors in console, which mean RLS is blocking the query
-                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for RLS (401/403) or network details!</p>`;
+                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for **Row Level Security (RLS)** policy errors!</p>`;
                 }
                 return;
             }
 
             if (quizData && quizData.length > 0) {
                 console.log('Quiz data loaded successfully!', quizData);
-                // SUCCESS: Connection and RLS policy are working!
+                // SUCCESS: This message indicates both file loading and database connection/query succeeded.
                 if (quizContainer) {
                      quizContainer.innerHTML = `<p class="text-green-600 font-bold">SUCCESS! Loaded ${quizData.length} questions. Now insert quiz rendering logic.</p>`;
                 }
             } else {
-                // If the connection worked but data didn't return (RLS or empty table)
+                // If the connection worked but data didn't return (Table empty or RLS is blocking)
                 if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">No questions found. The table is empty or the Row Level Security (RLS) policy is blocking access.</p>`;
+                    quizContainer.innerHTML = `<p class="error-message">No questions found. The table is empty or the **Row Level Security (RLS)** policy is blocking anonymous access.</p>`;
                 }
             }
         }
