@@ -63,31 +63,33 @@
         }
         
         // Utility to clean up formatting from Supabase data fields
-        function cleanText(text) {
-            if (!text) return '';
-            
-            // 1. Convert LaTeX price/value notation and cleanup $ signs
-            let cleaned = text
-                // Replace \text{...} with just the content
-                .replace(/\\text\{([^\}]+)\}/g, '$1')
-                // Replace \$ with the Rupee symbol
-                .replace(/\\\$/g, '₹')
-                // Replace \\ with a line break (often used for A&R)
-                .replace(/\\\\/g, '<br>')
-                // Remove left/right parentheses/braces used in LaTeX
-                .replace(/\\(left|right)[\(\)\|\{\}]/g, '')
-                // Remove any remaining stray $ signs (must be last in this chain)
-                .replace(/\$/g, '');
+       // Utility to clean up formatting from Supabase data fields
+function cleanText(text) {
+    if (!text) return '';
+    
+    // 1. Convert LaTeX price/value notation and cleanup $ signs
+    let cleaned = text
+        // Convert double dollar signs ($$ ... $$) to HTML for math display (e.g., using a library or just for structure)
+        .replace(/\$\$(.*?)\$\$/g, '<span class="math-formula inline-block my-1 italic">$1</span>')
+        // Replace \text{...} with just the content
+        .replace(/\\text\{([^\}]+)\}/g, '$1')
+        // Replace \$ with the Rupee symbol
+        .replace(/\\\$/g, '₹')
+        // Replace \\ with a line break (often used for A&R)
+        .replace(/\\\\/g, '<br>')
+        // Remove left/right parentheses/braces used in LaTeX
+        .replace(/\\(left|right)[\(\)\|\{\}]/g, '')
+        // Remove any remaining stray single $ signs (must be last in this chain)
+        .replace(/\$/g, '');
 
-            // 2. Convert all other Markdown bolding to HTML strong (for both Q and Options)
-            cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
-            // 3. Specific pattern fix for underlining (only necessary for the old bug)
-            cleaned = cleaned.replace(/a\s+\*+['"]?([^*'"]+)['"]?\*+\s+in/, 'a <u>$1</u> in');
-            
-            return cleaned;
-        }
-
+    // 2. Convert all other Markdown bolding to HTML strong (for both Q and Options)
+    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // 3. Specific pattern fix for underlining (optional, based on your previous use)
+    cleaned = cleaned.replace(/a\s+\*+['"]?([^*'"]+)['"]?\*+\s+in/, 'a <u>$1</u> in');
+    
+    return cleaned;
+}
 
         // --- Core Quiz State Management ---
 
