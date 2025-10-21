@@ -5,90 +5,281 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Demand Chapter Quiz</title>
     
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'cbse-blue': '#1a3e6a', 
+                        'cbse-light': '#f0f4f8', 
+                        'accent-green': '#059669', 
+                        'correct': '#10b981', /* Emerald 500 */
+                        'incorrect': '#ef4444', /* Red 500 */
+                    }
+                }
+            }
+        }
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script> 
 
     <script src="/eleventh-class/js/config.js"></script> 
+</head>
+<body class="bg-cbse-light min-h-screen antialiased">
 
+    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <h1 class="text-2xl font-bold text-cbse-blue">Demand Chapter Quiz Portal</h1>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <div id="quiz-container" class="container bg-white p-6 md:p-10 rounded-xl shadow-lg">
+            <p class="text-cbse-blue font-semibold">Loading quiz modules...</p>
+        </div>
+
+        <div id="config-error" class="hidden error-message mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            Configuration Error 🛑<br>Quiz failed to load because Supabase credentials are missing or the 'config.js' file could not be found.
+        </div>
+    </main>
+    
     <script>
-        // Check if credentials are now loaded
-        const configError = document.getElementById('config-error');
+        // Global variables to store filtered questions
+        let ALL_QUESTIONS = [];
+        let QUIZ_DATA = {}; // Stores the 20 questions for the currently active quiz
+        const TARGET_QUESTION_COUNT = 20;
+        const TABLE_NAME = 'demand_mcqs_v2'; // Your confirmed Supabase table name
 
-        if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
-            // Configuration failed (This error should now be gone if the path is correct)
-            if (configError) {
-                configError.style.display = 'block';
-            }
-            console.error("Configuration failed: Supabase keys are missing. Absolute path /eleventh-class/js/config.js failed.");
-        } else {
-            // FIX: Use 'supabaseClient' to avoid the ReferenceError.
-            const supabaseClient = supabase.createClient(
-                window.SUPABASE_URL,
-                window.SUPABASE_ANON_KEY
-            );
-            
-            console.log("Supabase client initialized successfully. Attempting to fetch quiz data.");
-            
-            // Pass the initialized client to the fetch function
-            fetchQuizData(supabaseClient); 
+        // Utility to shuffle and slice an array
+        function shuffleAndSlice(array, count) {
+            const shuffled = array.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
         }
-        
-        // Function to fetch and display quiz data
-        async function fetchQuizData(supabaseClient) {
-            const quizContainer = document.getElementById('quiz-container');
+
+        // --- Core Quiz State Management ---
+
+        function renderDifficultySelection(fullData) {
+            // Filter all questions by difficulty
+            const simpleQuestions = fullData.filter(q => q.difficulty.toLowerCase() === 'simple');
+            const mediumQuestions = fullData.filter(q => q.difficulty.toLowerCase() === 'medium');
+            const complexQuestions = fullData.filter(q => q.difficulty.toLowerCase() === 'complex');
+
+            ALL_QUESTIONS = {
+                simple: simpleQuestions,
+                medium: mediumQuestions,
+                complex: complexQuestions
+            };
+
+            const html = `
+                <h2 class="text-3xl font-extrabold text-cbse-blue mb-8">Choose Your Difficulty Level</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    ${createDifficultyCard('simple', simpleQuestions.length, 'Easy start, covers foundational concepts.', 'bg-accent-green hover:bg-green-700')}
+                    ${createDifficultyCard('medium', mediumQuestions.length, 'Moderate difficulty, requires application of concepts.', 'bg-yellow-600 hover:bg-yellow-700')}
+                    ${createDifficultyCard('advanced', complexQuestions.length, 'High difficulty, includes numericals and critical analysis.', 'bg-red-600 hover:bg-red-700')}
+                </div>
+            `;
+            document.getElementById('quiz-container').innerHTML = html;
+        }
+
+        function createDifficultyCard(level, count, description, colorClass) {
+            // Determine button text based on available count
+            const actualCount = Math.min(count, TARGET_QUESTION_COUNT);
+            const buttonText = count >= TARGET_QUESTION_COUNT 
+                ? `Start Quiz (${TARGET_QUESTION_COUNT} Qs)` 
+                : `Start Quiz (${count} Qs)`;
             
-            // ✅ FINAL FIX: The table name is corrected to your actual table name.
+            return `
+                <div class="p-6 bg-cbse-light rounded-lg shadow-md border border-gray-200">
+                    <h4 class="text-2xl font-bold capitalize text-cbse-blue mb-2">${level}</h4>
+                    <p class="text-gray-600 text-sm mb-4">${description}</p>
+                    <p class="text-sm font-semibold mb-4 text-gray-700">Available: ${count} questions. Starting: ${actualCount} questions.</p>
+                    <button 
+                        class="px-6 py-2 text-white font-bold rounded-lg shadow-md transition duration-150 ${colorClass}"
+                        onclick="startQuiz('${level}')">
+                        ${buttonText}
+                    </button>
+                </div>
+            `;
+        }
+
+        function startQuiz(difficulty) {
+            const allQs = ALL_QUESTIONS[difficulty];
+            // Shuffle and select the target number of questions
+            QUIZ_DATA.questions = shuffleAndSlice(allQs, TARGET_QUESTION_COUNT);
+            QUIZ_DATA.difficulty = difficulty;
+            QUIZ_DATA.answers = {}; // To store user answers
+
+            renderQuiz();
+        }
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            let quizHtml = `<h2 class="text-3xl font-extrabold capitalize text-cbse-blue mb-6">${QUIZ_DATA.difficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
+            
+            QUIZ_DATA.questions.forEach((q, index) => {
+                const questionNumber = index + 1;
+                const options = [
+                    { key: 'A', text: q.option_a },
+                    { key: 'B', text: q.option_b },
+                    { key: 'C', text: q.option_c },
+                    { key: 'D', text: q.option_d }
+                ].filter(opt => opt.text !== null); // Filter out null options (e.g., if only A and B are present)
+
+                quizHtml += `
+                    <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${q.question_text}</p>
+                        ${q.scenario_reason_text ? `<p class="italic text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded">${q.scenario_reason_text}</p>` : ''}
+                        
+                        <div class="options space-y-2">
+                            ${options.map(opt => `
+                                <label class="block p-3 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150">
+                                    <input 
+                                        type="radio" 
+                                        name="q_${index}" 
+                                        value="${opt.key}" 
+                                        onchange="storeAnswer(${index}, this.value)"
+                                        class="mr-3 text-cbse-blue focus:ring-cbse-blue"
+                                    >
+                                    <span class="font-medium">${opt.key}.</span> ${opt.text}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            quizHtml += `
+                <button 
+                    id="submit-button"
+                    class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
+                    onclick="submitQuiz()">
+                    Submit Answers
+                </button>
+                <button 
+                    class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
+                    onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
+                    Go Back to Difficulty Selection
+                </button>
+            `;
+
+            container.innerHTML = quizHtml;
+        }
+
+        function storeAnswer(qIndex, answerKey) {
+            QUIZ_DATA.answers[qIndex] = answerKey;
+        }
+
+        function submitQuiz() {
+            const totalQuestions = QUIZ_DATA.questions.length;
+            let score = 0;
+            
+            QUIZ_DATA.questions.forEach((q, index) => {
+                const userAnswer = QUIZ_DATA.answers[index];
+                const correctAnswer = q.correct_answer_key;
+                const questionCard = document.getElementById(`q-card-${index}`);
+                
+                // Disable all radio buttons
+                const radios = questionCard.querySelectorAll(`input[name="q_${index}"]`);
+                radios.forEach(radio => radio.disabled = true);
+
+                // Highlight results
+                if (userAnswer === correctAnswer) {
+                    score++;
+                    questionCard.classList.add('border-correct', 'bg-green-50');
+                } else {
+                    questionCard.classList.add('border-incorrect', 'bg-red-50');
+                }
+
+                // Show correct answer for every question
+                const optionsContainer = questionCard.querySelector('.options');
+                const options = optionsContainer.querySelectorAll('label');
+
+                options.forEach(label => {
+                    const input = label.querySelector('input');
+                    const optionKey = input.value;
+                    
+                    if (optionKey === correctAnswer) {
+                        // Highlight the correct answer
+                        label.classList.add('bg-correct', 'text-white', 'font-bold');
+                        label.classList.remove('hover:bg-cbse-light');
+                    } else if (optionKey === userAnswer && userAnswer !== correctAnswer) {
+                        // Highlight the user's incorrect choice
+                        label.classList.add('bg-incorrect', 'text-white', 'font-bold');
+                        label.classList.remove('hover:bg-cbse-light');
+                    } else {
+                        // Dim incorrect options that weren't selected
+                        label.classList.add('opacity-50');
+                    }
+                });
+            });
+
+            // Display final score
+            const scoreHtml = `
+                <div class="p-6 md:p-10 mb-8 text-center bg-cbse-blue text-white rounded-lg shadow-2xl">
+                    <h3 class="text-4xl font-extrabold mb-2">Quiz Complete!</h3>
+                    <p class="text-6xl font-black">${score}/${totalQuestions}</p>
+                    <p class="text-xl font-semibold mt-2">Your Score is: ${((score / totalQuestions) * 100).toFixed(1)}%</p>
+                </div>
+            `;
+            document.getElementById('quiz-container').insertAdjacentHTML('afterbegin', scoreHtml);
+            document.getElementById('submit-button').remove(); // Remove submit button
+
+             // Scroll to top to show score
+            document.getElementById('quiz-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+
+        // --- Supabase Connection and Initialization ---
+
+        function initSupabase() {
+            const configError = document.getElementById('config-error');
+
+            if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
+                configError.classList.remove('hidden');
+                console.error("Configuration failed: Supabase keys are missing.");
+            } else {
+                const supabaseClient = supabase.createClient(
+                    window.SUPABASE_URL,
+                    window.SUPABASE_ANON_KEY
+                );
+                
+                console.log("Supabase client initialized successfully. Attempting to fetch quiz data.");
+                fetchQuizData(supabaseClient); 
+            }
+        }
+
+        async function fetchQuizData(supabaseClient) {
+            const container = document.getElementById('quiz-container');
+
             const { data: quizData, error } = await supabaseClient
-                .from('demand_mcqs_v2') 
+                .from(TABLE_NAME) 
                 .select('*');
 
             if (error) {
                 console.error('Supabase Query Error:', error);
-                // Displays query error details on the page
-                if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for **Row Level Security (RLS) 401/403** errors!</p>`;
+                if (container) {
+                    container.innerHTML = `<p class="error-message text-red-700 bg-red-100 p-4 rounded">Error retrieving questions: ${error.message}. Please check RLS policy for the table **${TABLE_NAME}**.</p>`;
                 }
                 return;
             }
 
             if (quizData && quizData.length > 0) {
-                console.log('Quiz data loaded successfully!', quizData);
-                // SUCCESS!
-                if (quizContainer) {
-                     quizContainer.innerHTML = `<p class="text-green-600 font-bold">SUCCESS! Loaded ${quizData.length} questions. Now insert quiz rendering logic.</p>`;
-                }
+                console.log(`Quiz data loaded successfully! (${quizData.length})`, quizData);
+                // SUCCESS: Render the initial difficulty selection screen
+                renderDifficultySelection(quizData);
             } else {
-                // If data didn't return (Table is empty or RLS is blocking)
-                if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">No questions found. The table is empty or the **Row Level Security (RLS)** policy is blocking anonymous access. (Check RLS in your Supabase dashboard!)</p>`;
+                if (container) {
+                    container.innerHTML = `<p class="text-gray-700 p-4 rounded">No questions found. The table **${TABLE_NAME}** is empty or the RLS policy is blocking access, but not giving a proper error code.</p>`;
                 }
             }
         }
-        
+
+        // Start the application after the script loads
+        initSupabase();
     </script>
-    
-    <style>
-        /* Basic styling is included here to ensure the page is readable */
-        body { font-family: sans-serif; padding: 20px; background-color: #f8f8f8; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #1a3e6a; border-bottom: 2px solid #1a3e6a; padding-bottom: 10px; margin-bottom: 20px; }
-        .error-message { color: #dc2626; border: 1px solid #dc2626; padding: 15px; background: #fee2e2; border-radius: 4px; }
-        .text-green-600 { color: #059669; }
-        .font-bold { font-weight: 700; }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1>CBSE Class 11 Microeconomics: Demand Quiz</h1>
-        
-        <div id="quiz-container">
-            <p>Loading quiz questions from Supabase...</p>
-        </div>
-
-        <div id="config-error" class="error-message" style="display:none;">
-            Configuration Error 🛑<br>Quiz failed to load because Supabase credentials are missing or the 'config.js' file could not be found.
-        </div>
-    </div>
-
 </body>
 </html>
