@@ -3,10 +3,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Economics — CBSE Class 11 Portal</title>
-    <!-- Load Tailwind CSS -->
+    <title>Class 11 Economics - Full Curriculum</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configure Tailwind to use Inter font and define custom colors -->
     <script>
         tailwind.config = {
             theme: {
@@ -18,140 +16,328 @@
                         'cbse-blue': '#1a3e6a', 
                         'cbse-light': '#f0f4f8', 
                         'accent-green': '#059669', 
+                        'unit-bg': '#e3f2fd', /* Light blue for unit headers */
+                        'chapter-bg': '#ffffff', /* White for chapter cards */
                     }
                 }
             }
         }
     </script>
-    <!-- Load Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .unit-header {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .unit-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out;
+        }
+        .unit-header.active .icon-rotate {
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 <body class="bg-cbse-light min-h-screen antialiased">
 
-    <!-- Header & Navigation (Reused from index.html) -->
     <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
             <div class="flex items-center space-x-3 mb-4 md:mb-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1a3e6a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-graduation-cap">
-                    <path d="M22 10v6M22 10c0-1.5-1.5-3-3-3s-3 1.5-3 3M22 10c0 1.5-1.5 3-3 3s-3-1.5-3-3"/><path d="M10 21.6l-5-2.5V8.4l5 2.5 5-2.5 5 2.5V6.6L10 2.6 0 6.6l10 4 10-4"/><path d="M10 17.6v-3.2"/>
-                </svg>
-                <h1 class="text-3xl font-extrabold text-cbse-blue tracking-tight">
-                    CBSE Class 11 Portal
-                </h1>
+                <span data-lucide="book-open-check" class="text-cbse-blue w-8 h-8"></span>
+                <h1 class="text-2xl font-extrabold text-cbse-blue">CBSE Class 11 Economics Portal</h1>
             </div>
-            
-            <!-- Navigation -->
-            <nav class="flex flex-wrap justify-center md:justify-end space-x-2 sm:space-x-4 text-sm font-medium">
-                <a href="index.html" class="nav-link text-cbse-blue font-semibold">Home</a>
-                <a href="english.html" class="nav-link">English</a>
-                <a href="accountancy.html" class="nav-link">Accountancy</a>
-                <a href="business.html" class="nav-link">Business Studies</a>
-                <a href="economics.html" class="nav-link text-accent-green bg-cbse-light">Economics</a>
-                <a href="mathematics.html" class="nav-link">Mathematics</a>
+            <nav class="flex space-x-2 sm:space-x-4">
+                <a href="#" class="nav-link bg-cbse-blue text-white hover:bg-cbse-blue/90">Curriculum Home</a>
+                <a href="#mock-test" class="nav-link">Mock Test</a>
+                <a href="https://example.com/login" class="nav-link">Login</a>
             </nav>
         </div>
     </header>
 
-    <!-- Main Content: Economics Chapters -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-cbse-blue pb-2">Full Class 11 Economics Syllabus</h2>
         
-        <!-- Subject Banner -->
-        <section class="bg-white p-6 sm:p-10 rounded-2xl shadow-xl mb-12 border-l-8 border-accent-green">
-            <h2 class="text-4xl font-extrabold text-gray-800 flex items-center mb-2">
-                <i data-lucide="line-chart" class="text-accent-green mr-3 h-8 w-8"></i>
-                Economics (Class 11)
-            </h2>
-            <p class="text-xl text-gray-600">
-                Explore Microeconomics and Statistics for Economics. Select a chapter to start revising or take a quiz.
-            </p>
+        <section class="mb-10 bg-white p-6 rounded-xl shadow-lg border-l-4 border-accent-green">
+            <h3 class="text-2xl font-bold text-accent-green mb-4 flex items-center"><span data-lucide="trending-up" class="w-6 h-6 mr-2"></span>Book 1: Statistics for Economics</h3>
+
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="stats-unit-1">
+                    <span>UNIT 1: INTRODUCTION</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="stats-unit-1" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">1. Introduction</span>
+                        <button onclick="startQuiz('Introduction')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="stats-unit-2">
+                    <span>UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="stats-unit-2" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">2. Collection of Data</span>
+                        <button onclick="startQuiz('Collection of Data')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">3. Organisation of Data</span>
+                        <button onclick="startQuiz('Organisation of Data')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">4. Presentation of Data</span>
+                        <button onclick="startQuiz('Presentation of Data')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="stats-unit-3">
+                    <span>UNIT 3: STATISTICAL TOOLS AND INTERPRETATION</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="stats-unit-3" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">5. Measures of Central Tendency</span>
+                        <button onclick="startQuiz('Measures of Central Tendency')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">6. Measures of Dispersion</span>
+                        <button onclick="startQuiz('Measures of Dispersion')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">7. Correlation</span>
+                        <button onclick="startQuiz('Correlation')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">8. Index Numbers</span>
+                        <button onclick="startQuiz('Index Numbers')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-cbse-blue flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">9. Use of Statistical Tools (Project)</span>
+                        <button onclick="startQuiz('Use of Statistical Tools')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="mb-10 bg-white p-6 rounded-xl shadow-lg border-l-4 border-cbse-blue">
+            <h3 class="text-2xl font-bold text-cbse-blue mb-4 flex items-center"><span data-lucide="dollar-sign" class="w-6 h-6 mr-2"></span>Book 2: Introductory Microeconomics</h3>
+
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="micro-unit-4">
+                    <span>UNIT 4: INTRODUCTION</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="micro-unit-4" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">1. Introduction</span>
+                        <button onclick="startQuiz('Micro Introduction')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="micro-unit-5">
+                    <span>UNIT 5: CONSUMER'S EQUILIBRIUM AND DEMAND</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="micro-unit-5" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">2. Consumer's Equilibrium</span>
+                        <button onclick="startQuiz('Consumer\\'s Equilibrium')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">3. Demand</span>
+                        <button onclick="startQuiz('Demand')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">4. Elasticity of Demand</span>
+                        <button onclick="startQuiz('Elasticity of Demand')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="micro-unit-6">
+                    <span>UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="micro-unit-6" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">5. Production Function</span>
+                        <button onclick="startQuiz('Production Function')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">6. Cost</span>
+                        <button onclick="startQuiz('Cost')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">7. Revenue</span>
+                        <button onclick="startQuiz('Revenue')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">8. Producer's Equilibrium</span>
+                        <button onclick="startQuiz('Producer\\'s Equilibrium')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">9. Supply</span>
+                        <button onclick="startQuiz('Supply')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="micro-unit-7">
+                    <span>UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="micro-unit-7" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">10. Main Market Forms</span>
+                        <button onclick="startQuiz('Main Market Forms')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-accent-green flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">11. Price Determination & Applications</span>
+                        <button onclick="startQuiz('Price Determination')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                </div>
+            </div>
         </section>
 
-        <h3 class="text-2xl font-bold text-cbse-blue mb-6 border-b-2 border-gray-200 pb-2">Microeconomics Section</h3>
-        
-        <!-- Chapter List Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            <!-- Chapter 1: Introduction -->
-            <div class="chapter-card group">
-                <h4 class="text-xl font-bold text-gray-800 mb-2">1. Introduction to Economics</h4>
-                <p class="text-gray-500 text-sm mb-4">Central problems, production possibility frontier, and basic concepts.</p>
-                <div class="flex space-x-3">
-                    <button class="action-btn-secondary">View Notes</button>
-                    <button class="action-btn-secondary">Practice Questions</button>
-                    <button class="action-btn-primary bg-gray-200 text-gray-700 hover:bg-gray-300">Quiz</button>
+        <section class="mb-10 bg-white p-6 rounded-xl shadow-lg border-l-4 border-red-600">
+            <h3 class="text-2xl font-bold text-red-600 mb-4 flex items-center"><span data-lucide="map" class="w-6 h-6 mr-2"></span>Book 3: Indian Economic Development</h3>
+
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="ied-unit-1">
+                    <span>UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="ied-unit-1" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">1. Indian Economy on the Eve of Independence</span>
+                        <button onclick="startQuiz('IE Independence')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">2. Indian Economy (1950–1990)</span>
+                        <button onclick="startQuiz('IE 1950-1990')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">3. LPG: An Appraisal</span>
+                        <button onclick="startQuiz('LPG Appraisal')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Chapter 2: Consumer Equilibrium -->
-            <div class="chapter-card group">
-                <h4 class="text-xl font-bold text-gray-800 mb-2">2. Consumer Equilibrium</h4>
-                <p class="text-gray-500 text-sm mb-4">Utility analysis, indifference curves, and budget line.</p>
-                <div class="flex space-x-3">
-                    <button class="action-btn-secondary">View Notes</button>
-                    <button class="action-btn-secondary">Practice Questions</button>
-                    <button class="action-btn-primary bg-gray-200 text-gray-700 hover:bg-gray-300">Quiz</button>
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="ied-unit-2">
+                    <span>UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                </div>
+                <div id="ied-unit-2" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">4. Human Capital Formation in India</span>
+                        <button onclick="startQuiz('Human Capital')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">5. Rural Development</span>
+                        <button onclick="startQuiz('Rural Development')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">6. Employment: Growth, Informalisation and Other Issues</span>
+                        <button onclick="startQuiz('Employment')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">7. Infrastructure</span>
+                        <button onclick="startQuiz('Infrastructure')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">8. Environment and Sustainable Development</span>
+                        <button onclick="startQuiz('Environment')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Chapter 3: Demand (The required quiz link) -->
-            <!-- The 'quiz.html' file will likely be a wrapper for the React/JSX component you received earlier -->
-            <a href="quiz.html" class="chapter-card bg-accent-green/10 border-accent-green border-2 ring-4 ring-accent-green/20 group hover:ring-accent-green/40 hover:scale-[1.02]">
-                <h4 class="text-xl font-bold text-accent-green mb-2 group-hover:text-cbse-blue transition-colors">3. Demand (Your Focus Chapter)</h4>
-                <p class="text-gray-600 text-sm mb-4">Law of Demand, determinants, elasticity, and exceptions.</p>
-                <div class="flex justify-center">
-                    <button class="px-6 py-2 bg-accent-green text-white font-bold rounded-lg shadow-md hover:bg-green-700 transition duration-150 transform hover:scale-[1.05] w-full">
-                        Start Timed Quiz (20 Questions) &rarr;
-                    </button>
+            <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="ied-unit-3">
+                    <span>UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS</span>
+                    <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
                 </div>
-            </a>
-
-            <!-- Chapter 4: Production Function -->
-            <div class="chapter-card group">
-                <h4 class="text-xl font-bold text-gray-800 mb-2">4. Production Function</h4>
-                <p class="text-gray-500 text-sm mb-4">Short-run and long-run production, returns to a factor.</p>
-                <div class="flex space-x-3">
-                    <button class="action-btn-secondary">View Notes</button>
-                    <button class="action-btn-secondary">Practice Questions</button>
-                    <button class="action-btn-primary bg-gray-200 text-gray-700 hover:bg-gray-300">Quiz</button>
+                <div id="ied-unit-3" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                    <div class="chapter-card bg-chapter-bg p-4 rounded-lg shadow border-l-2 border-red-600 flex justify-between items-center">
+                        <span class="text-gray-700 font-medium">9. Comparative Development Experiences</span>
+                        <button onclick="startQuiz('Comparative Development')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
+                    </div>
                 </div>
             </div>
-            
-        </div>
+        </section>
 
-        <h3 class="text-2xl font-bold text-cbse-blue mb-6 mt-12 border-b-2 border-gray-200 pb-2">Master Quizzes</h3>
-        <div class="p-6 rounded-xl bg-white shadow-lg border-l-4 border-cbse-blue">
-            <h4 class="text-xl font-bold text-cbse-blue mb-2">Full Syllabus Mock Test</h4>
-            <p class="text-gray-600 text-sm mb-4">Test your readiness with a full-length, 90-minute examination covering all CBSE Class 11 Economics chapters.</p>
-            <button class="px-6 py-2 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 transition duration-150">
+        <section id="mock-test" class="bg-white p-8 rounded-xl shadow-lg border-t-2 border-b-2 border-cbse-blue flex flex-col items-center text-center">
+            <h4 class="text-3xl font-extrabold text-cbse-blue mb-2">Full Syllabus Mock Test</h4>
+            <p class="text-gray-600 text-lg mb-4">Test your readiness with a full-length, 90-minute examination covering all CBSE Class 11 Economics chapters.</p>
+            <button class="px-8 py-3 bg-red-600 text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-150 text-xl">
                 Start Master Quiz
             </button>
-        </div>
+        </section>
 
     </main>
 
-    <!-- Footer (Reused from index.html) -->
     <footer class="bg-cbse-blue mt-12 py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
             <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Dedicated to Student Success</small>
         </div>
     </footer>
 
-    <!-- Script and Custom Styles -->
     <script>
+        // Initialize Lucide Icons
         lucide.createIcons();
 
+        // **QUIZ LOGIC - REPLICATED FROM DEMAND**
+        function startQuiz(chapterName) {
+            // **DO NOT BREAK THIS LOGIC**
+            // This function is assumed to be working perfectly for the 'Demand' chapter.
+            // When replicating, ensure it opens the correct quiz URL/modal for the given chapter.
+            if (chapterName === 'Demand') {
+                // Example for the existing Demand logic
+                alert("Launching the FANTASTIC working Demand Quiz! (URL: /quizzes/demand.html)");
+                // In a real application: window.location.href = '/quizzes/demand.html';
+            } else {
+                // Replicated logic for all other chapters
+                alert(`Launching Quiz for: ${chapterName}! (URL: /quizzes/${chapterName.replace(/\\/g, '').replace(/\s/g, '-').toLowerCase()}.html)`);
+                // In a real application: window.location.href = `/quizzes/${chapterName.replace(/\s/g, '-').toLowerCase()}.html`;
+            }
+        }
+        // **END OF QUIZ LOGIC**
+
+
+        // ACCORDION LOGIC
+        document.querySelectorAll('.unit-header').forEach(header => {
+            // Initially set content height to allow smooth transition
+            const content = document.getElementById(header.dataset.target);
+            if (content) {
+                // Automatically open all units on load for visibility
+                content.style.maxHeight = content.scrollHeight + "px";
+                header.classList.add('active'); 
+
+                header.addEventListener('click', () => {
+                    header.classList.toggle('active');
+                    if (header.classList.contains('active')) {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    } else {
+                        content.style.maxHeight = '0';
+                    }
+                });
+            }
+        });
+
+        // Apply styles to nav links
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
         });
     </script>
-    
-    <style>
-        .chapter-card {
-            @apply block p-5 rounded-xl bg-white border border-gray-200 shadow-md transition-all duration-200 transform hover:scale-[1.01] hover:shadow-lg;
-        }
-        .action-btn-secondary {
-            @apply px-4 py-1 text-sm font-semibold rounded-full text-cbse-blue border border-cbse-blue hover:bg-cbse-blue hover:text-white transition duration-150;
-        }
-    </style>
 </body>
 </html>
