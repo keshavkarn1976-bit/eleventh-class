@@ -31,17 +31,24 @@
             cursor: pointer;
             @apply shadow-xl hover:shadow-2xl transform hover:-translate-y-1;
         }
+        /* Style for unit header */
         .unit-header {
             cursor: pointer;
             transition: all 0.2s ease-in-out;
         }
+        /* Style for unit content - initially set max-height to 0 to prepare for expansion */
         .unit-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s ease-in-out;
         }
+        /* Rotate icon when unit is active (expanded) */
         .unit-header.active .icon-rotate {
             transform: rotate(180deg);
+        }
+        /* Style for the back button */
+        .back-btn {
+            @apply inline-flex items-center text-lg font-medium text-cbse-blue hover:text-cbse-blue/80 mb-6 transition duration-150;
         }
     </style>
 </head>
@@ -96,7 +103,9 @@
         </div>
 
         <div id="units-view" class="view hidden">
-            <button onclick="showView('book-select')" class="text-cbse-blue hover:text-cbse-blue/80 mb-6 flex items-center transition"><span data-lucide="arrow-left" class="w-5 h-5 mr-2"></span> Back to Books</button>
+            <button onclick="showView('book-select')" class="back-btn">
+                <span data-lucide="arrow-left" class="w-5 h-5 mr-2"></span> Back to Books
+            </button>
             <h2 id="units-view-title" class="text-3xl font-bold text-gray-800 mb-6 border-b-2 pb-2"></h2>
             <div id="units-list">
                 </div>
@@ -111,7 +120,7 @@
     </footer>
 
     <script>
-        // Data Structure for all three books
+        // Data Structure for all three books (No change from previous version)
         const bookData = {
             'Stats': [
                 { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
@@ -143,17 +152,15 @@
         // ----------------------------------------------------
         function startQuiz(chapterName) {
             // **PRESERVING THE WORKING DEMAND QUIZ LOGIC**
-            if (chapterName.includes('Demand') && chapterName.length < 15) { 
-                // This specifically targets the "Demand" chapter (3. Demand) to use its existing logic
+            // Checks for the specific chapter "3. Demand" to use its existing logic
+            if (chapterName.trim() === '3. Demand') { 
                 alert("Launching the FANTASTIC working Demand Quiz! (URL: /quizzes/demand-quiz.html)");
-                // In a real application: window.location.href = '/quizzes/demand-quiz.html';
                 return;
             }
             
             // Replicated logic for ALL other chapters
             const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
             alert(`Launching Quiz for: ${chapterName}! (URL: /quizzes/${urlSafeName}.html)`);
-            // In a real application: window.location.href = `/quizzes/${urlSafeName}.html`;
         }
         // ----------------------------------------------------
         // END OF QUIZ LOGIC
@@ -205,37 +212,42 @@
 
             unitsList.innerHTML = html;
             
-            // Re-initialize icons and accordion after content injection
+            // Re-initialize icons
             lucide.createIcons();
-            initAccordion();
             
             // Switch view
             showView('units');
+            
+            // IMPORTANT: Initialize accordion *after* view change and DOM update
+            // This time, it uses a slight delay to ensure scrollHeight is calculated correctly,
+            // making the units fully expanded from the start (better UX).
+            setTimeout(initAccordion, 10); 
         }
 
-        // ACCORDION INITIALIZATION LOGIC
+        // ACCORDION INITIALIZATION LOGIC (Now auto-expanded)
         function initAccordion() {
             document.querySelectorAll('.unit-header').forEach(header => {
                 const content = document.getElementById(header.dataset.target);
                 if (content) {
-                    // Start expanded
+                    // **UX IMPROVEMENT**: Force expand immediately by setting maxHeight
                     content.style.maxHeight = content.scrollHeight + "px";
                     header.classList.add('active'); 
 
-                    // Clear previous listeners to prevent multiple events
+                    // Clear previous listeners and attach the new one
                     header.removeEventListener('click', handleAccordionClick);
                     header.addEventListener('click', handleAccordionClick);
                 }
             });
         }
         
+        // ACCORDION CLICK HANDLER (Now collapses/expands on click)
         function handleAccordionClick(event) {
             const header = event.currentTarget;
             const content = document.getElementById(header.dataset.target);
             
             header.classList.toggle('active');
             if (header.classList.contains('active')) {
-                // Set max-height to the actual scrollHeight
+                // Expand
                 content.style.maxHeight = content.scrollHeight + "px";
             } else {
                 // Collapse
