@@ -68,8 +68,7 @@
             
             let cleaned = text;
 
-            // 🚨 FIX: Remove common redundant prefixes (Scenario/Case/Reason) from the start of the raw data.
-            // This prevents duplication when the script adds its own label.
+            // FIX: Remove common redundant prefixes (Scenario/Case/Reason) from the start of the raw data.
             cleaned = cleaned
                 // Regex matches optional ** bolding, then (Scenario|Case|Reason (R)):, then optional ** bolding.
                 .replace(/^\s*\*\*?(Scenario|Case|Reason \(R\)):\*\*\s*/i, '')
@@ -169,112 +168,119 @@
         }
         
         function renderQuiz() {
-    const container = document.getElementById('quiz-container');
-    
-    const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
-    const titleDifficulty = displayDifficulty === 'Complex' ? 'Advanced' : displayDifficulty;
+            const container = document.getElementById('quiz-container');
+            
+            const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
+            const titleDifficulty = displayDifficulty === 'Complex' ? 'Advanced' : displayDifficulty;
 
-    let quizHtml = `<h2 class="text-3xl font-extrabold text-cbse-blue mb-6">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
-    
-    QUIZ_DATA.questions.forEach((q, index) => {
-        const questionNumber = index + 1;
-        
-        const rawQuestionText = q.question_text || '';
-        const typeString = q.question_type ? q.question_type.toLowerCase() : '';
-        
-        // --- ASSERTION CHECK (Logic remains correct) ---
-        const isAssertionType = typeString.includes('a&r') || 
-                                typeString.includes('ar') || 
-                                typeString.includes('assertion');
+            let quizHtml = `<h2 class="text-3xl font-extrabold text-cbse-blue mb-6">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
+            
+            QUIZ_DATA.questions.forEach((q, index) => {
+                const questionNumber = index + 1;
+                
+                const rawQuestionText = q.question_text || '';
+                const typeString = q.question_type ? q.question_type.toLowerCase() : '';
+                
+                // --- ASSERTION CHECK ---
+                const isAssertionType = typeString.includes('a&r') || 
+                                        typeString.includes('ar') || 
+                                        typeString.includes('assertion');
 
-        // --- QUESTION TEXT FIX (Logic remains correct) ---
-        let questionText; 
-        if (isAssertionType) {
-            const assertionPart = rawQuestionText.split(/\*\*Reason \(R\):\*\*/i)[0];
-            questionText = cleanText(assertionPart); 
-            
-        } else {
-            questionText = cleanText(rawQuestionText);
-        }
-        
-        // --- SCENARIO/REASON BLOCK LOGIC (Logic remains correct) ---
-        const hasType = isAssertionType || 
-                        typeString.includes('case'); 
+                // --- QUESTION TEXT FIX (Removing Reason from the Question for AR) ---
+                let questionText; 
+                if (isAssertionType) {
+                    // Split at the 'Reason (R):' marker to separate A and R 
+                    const assertionPart = rawQuestionText.split(/\*\*Reason \(R\):\*\*/i)[0];
+                    // Clean the Assertion (A) part, which may contain a "Assertion:" prefix
+                    questionText = cleanText(assertionPart); 
+                    
+                } else {
+                    // For all other types (MCQ, Case), use the full text and clean it
+                    questionText = cleanText(rawQuestionText);
+                }
+                
+                // --- SCENARIO/REASON BLOCK LOGIC ---
+                const hasType = isAssertionType || 
+                                typeString.includes('case'); 
 
-        const hasRawText = q.scenario_reason_text && 
-                           q.scenario_reason_text.trim() !== '' && 
-                           q.scenario_reason_text.toUpperCase() !== 'N/A';
-        
-        const showScenario = hasType && hasRawText;
-        
-        const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : ''; 
-        const scenarioBoxTitle = isAssertionType ? 'Reason (R):' : 'Scenario:';
+                const hasRawText = q.scenario_reason_text && 
+                                 q.scenario_reason_text.trim() !== '' && 
+                                 q.scenario_reason_text.toUpperCase() !== 'N/A';
+                
+                const showScenario = hasType && hasRawText;
+                
+                // Clean the scenario text (the cleanText function now handles removing the duplicate prefix)
+                const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : ''; 
+                const scenarioBoxTitle = isAssertionType ? 'Reason (R):' : 'Scenario:';
 
-        // --- OPTIONS LOGIC (Logic remains correct) ---
-        let options = [];
-        if (isAssertionType) {
-            options = [
-                { key: 'A', text: cleanText(q.option_a) },
-                { key: 'B', text: cleanText(q.option_b) },
-                { key: 'C', text: cleanText(q.option_c) },
-                { key: 'D', text: cleanText(q.option_d) }
-            ];
-        } else {
-            options = [
-                { key: 'A', text: cleanText(q.option_a) },
-                { key: 'B', text: cleanText(q.option_b) },
-                { key: 'C', text: cleanText(q.option_c) },
-                { key: 'D', text: cleanText(q.option_d) }
-            ].filter(opt => opt.text !== null && opt.text.trim() !== '');
-        }
+                // --- OPTIONS LOGIC ---
+                let options = [];
 
-        quizHtml += `
-            <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
-                
-                ${showScenario && scenarioReasonText ? 
-                    // FIX 1: Changed mb-4 to mb-3 for tighter spacing below the scenario box
-                    `<div class="bg-gray-50 p-3 mb-3 shadow-inner border-l-4 border-cbse-blue">
-                        <p class="text-base font-normal text-gray-800">
-                            <span class="font-bold text-cbse-blue">${scenarioBoxTitle}</span> ${scenarioReasonText}
-                        </p>
-                    </div>` 
-                    : ''}
-                
-                <div class="options space-y-1"> 
-                    ${options.map(opt => `
-                        <label class="block p-2 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150"> 
-                            <input 
-                                type="radio" 
-                                name="q_${index}" 
-                                value="${opt.key}" 
-                                onchange="storeAnswer(${index}, this.value)"
-                                class="mr-3 text-cbse-blue focus:ring-cbse-blue"
-                            >
-                            <span class="font-medium">${opt.key}.</span> ${opt.text}
-                        </label>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    });
+                // Check for A&R/Assertion types to determine option filtering (use ALL 4 for A&R)
+                if (isAssertionType) {
+                    options = [
+                        { key: 'A', text: cleanText(q.option_a) },
+                        { key: 'B', text: cleanText(q.option_b) },
+                        { key: 'C', text: cleanText(q.option_c) },
+                        { key: 'D', text: cleanText(q.option_d) }
+                    ];
+                } else {
+                    // For MCQ/Case, filter out empty options
+                    options = [
+                        { key: 'A', text: cleanText(q.option_a) },
+                        { key: 'B', text: cleanText(q.option_b) },
+                        { key: 'C', text: cleanText(q.option_c) },
+                        { key: 'D', text: cleanText(q.option_d) }
+                    ].filter(opt => opt.text !== null && opt.text.trim() !== '');
+                }
 
-    quizHtml += `
-        <button 
-            id="submit-button"
-            class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
-            onclick="submitQuiz()">
-            Submit Answers
-        </button>
-        <button 
-            class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
-            onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
-            Go Back to Difficulty Selection
-        </button>
-    `;
+                quizHtml += `
+                    <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
+                        
+                        ${showScenario && scenarioReasonText ? 
+                            // FIX 1: Removed background, border, and shadow. Reduced padding/margin for tightness.
+                            `<div class="p-2 mb-2"> 
+                                <p class="text-base font-normal text-gray-800">
+                                    <span class="font-bold text-cbse-blue">${scenarioBoxTitle}</span> ${scenarioReasonText}
+                                </p>
+                            </div>` 
+                            : ''}
+                        
+                                                <div class="options space-y-1"> 
+                            ${options.map(opt => `
+                                                                <label class="block p-2 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150">
+                                    <input 
+                                        type="radio" 
+                                        name="q_${index}" 
+                                        value="${opt.key}" 
+                                        onchange="storeAnswer(${index}, this.value)"
+                                        class="mr-3 text-cbse-blue focus:ring-cbse-blue"
+                                    >
+                                    <span class="font-medium">${opt.key}.</span> ${opt.text}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
 
-    container.innerHTML = quizHtml;
-}
+            quizHtml += `
+                <button 
+                    id="submit-button"
+                    class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
+                    onclick="submitQuiz()">
+                    Submit Answers
+                </button>
+                <button 
+                    class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
+                    onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
+                    Go Back to Difficulty Selection
+                </button>
+            `;
+
+            container.innerHTML = quizHtml;
+        }
        
         function storeAnswer(qIndex, answerKey) {
             QUIZ_DATA.answers[qIndex] = answerKey;
