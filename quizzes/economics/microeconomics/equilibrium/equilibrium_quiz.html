@@ -63,32 +63,30 @@
         }
         
         // Utility to clean up formatting from Supabase data fields
-        function cleanText(text) {
-            if (!text) return '';
-            
-            // 1. Convert LaTeX price/value notation to clean HTML/text
-            let cleaned = text
-                .replace(/\$\\(text)\{([^\}]+)\}\$|\\text\{([^\}]+)\}|(\\\$)|(\\\\)|(\text\{[^\}]+\})/g, (match, p1, p2, p3) => {
-                    const matchText = match.match(/\\text\{([^\}]+)\}/);
-                    if (matchText) return matchText[1]; 
+      function cleanText(text) {
+    if (!text) return '';
+    
+    // 1. Convert LaTeX price/value notation and cleanup $ signs
+    let cleaned = text
+        // Replace \text{...} with just the content
+        .replace(/\\text\{([^\}]+)\}/g, '$1')
+        // Replace \$ with the Rupee symbol
+        .replace(/\\\$/g, '₹')
+        // Replace \\ with a line break (often used for A&R)
+        .replace(/\\\\/g, '<br>')
+        // Remove left/right parentheses/braces used in LaTeX
+        .replace(/\\(left|right)[\(\)\|\{\}]/g, '')
+        // Remove any remaining stray $ signs (must be last in this chain)
+        .replace(/\$/g, '');
 
-                    if (match === '\\$') return '₹'; 
-                    
-                    if (match === '\\\\') return '<br>'; 
-                    
-                    return match;
-                })
-                .replace(/\$/g, '') 
-                .replace(/\\(left|right)[\(\)\|\{\}]/g, ''); 
-
-            // 2. Target specific double-star formatting and replace with underline 
-            cleaned = cleaned.replace(/a\s+\*+['"]?([^*'"]+)['"]?\*+\s+in/, 'a <u>$1</u> in');
-
-            // 3. Convert all other Markdown bolding to HTML strong
-            cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
-            return cleaned;
-        }
+    // 2. Convert all other Markdown bolding to HTML strong (for both Q and Options)
+    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // 3. Specific pattern fix for underlining (only necessary for the old bug)
+    cleaned = cleaned.replace(/a\s+\*+['"]?([^*'"]+)['"]?\*+\s+in/, 'a <u>$1</u> in');
+    
+    return cleaned;
+}
 
 
         // --- Core Quiz State Management ---
