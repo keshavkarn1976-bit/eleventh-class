@@ -144,17 +144,17 @@
         });
 
         // ----------------------------------------------------
-        // QUIZ LOGIC - CRITICAL: FIXED NAVIGATION TO demand_quiz.html
+        // QUIZ LOGIC - CRITICAL: FIXED NAVIGATION TO FULL PATH
         // ----------------------------------------------------
         function startQuiz(chapterName) {
             // TARGET: Introductory Microeconomics, Unit 5, Chapter 3: Demand
             if (chapterName.trim() === '3. Demand') { 
-                // FIX: Direct navigation to the renamed quiz file
-                window.location.href = '/quizzes/demand_quiz.html';
+                // CRITICAL FIX: Direct navigation to the specified full path
+                window.location.href = '/quizzes/economics/microeconomics/demand_quiz.html';
                 return;
             }
             
-            // Logic for ALL other chapters (still uses an alert as a placeholder)
+            // Logic for ALL other chapters (placeholder alert)
             const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
             alert(`Quiz not yet implemented for: ${chapterName}! Target URL: /quizzes/${urlSafeName}.html`);
             // When ready, replace the alert above with:
@@ -217,7 +217,6 @@
             showView('units');
             
             // IMPORTANT: Initialize accordion *after* view change and DOM update
-            // This ensures the units are fully expanded from the start (better UX).
             setTimeout(initAccordion, 10); 
         }
 
