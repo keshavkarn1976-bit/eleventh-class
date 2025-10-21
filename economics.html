@@ -31,22 +31,18 @@
             cursor: pointer;
             @apply shadow-xl hover:shadow-2xl transform hover:-translate-y-1;
         }
-        /* Style for unit header */
         .unit-header {
             cursor: pointer;
             transition: all 0.2s ease-in-out;
         }
-        /* Style for unit content - initially set max-height to 0 to prepare for expansion */
         .unit-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.4s ease-in-out;
         }
-        /* Rotate icon when unit is active (expanded) */
         .unit-header.active .icon-rotate {
             transform: rotate(180deg);
         }
-        /* Style for the back button */
         .back-btn {
             @apply inline-flex items-center text-lg font-medium text-cbse-blue hover:text-cbse-blue/80 mb-6 transition duration-150;
         }
@@ -148,19 +144,20 @@
         });
 
         // ----------------------------------------------------
-        // QUIZ LOGIC - CRITICAL: ENSURES DEMAND LOGIC IS SAFE
+        // QUIZ LOGIC - CRITICAL: UPDATED TO CALL demand_quiz.html
         // ----------------------------------------------------
         function startQuiz(chapterName) {
-            // **PRESERVING THE WORKING DEMAND QUIZ LOGIC**
-            // Checks for the specific chapter "3. Demand" to use its existing logic
+            // **UPDATED LOGIC**: Targets "3. Demand" and calls the new file.
             if (chapterName.trim() === '3. Demand') { 
-                alert("Launching the FANTASTIC working Demand Quiz! (URL: /quizzes/demand-quiz.html)");
+                alert("Launching the FANTASTIC working Demand Quiz! (URL: /quizzes/demand_quiz.html)");
+                // In a real application, you would use: window.location.href = '/quizzes/demand_quiz.html';
                 return;
             }
             
             // Replicated logic for ALL other chapters
             const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
             alert(`Launching Quiz for: ${chapterName}! (URL: /quizzes/${urlSafeName}.html)`);
+            // In a real application, you would use: window.location.href = `/quizzes/${urlSafeName}.html`;
         }
         // ----------------------------------------------------
         // END OF QUIZ LOGIC
@@ -219,17 +216,16 @@
             showView('units');
             
             // IMPORTANT: Initialize accordion *after* view change and DOM update
-            // This time, it uses a slight delay to ensure scrollHeight is calculated correctly,
-            // making the units fully expanded from the start (better UX).
+            // This ensures the units are fully expanded from the start (better UX).
             setTimeout(initAccordion, 10); 
         }
 
-        // ACCORDION INITIALIZATION LOGIC (Now auto-expanded)
+        // ACCORDION INITIALIZATION LOGIC (Auto-expanded on load)
         function initAccordion() {
             document.querySelectorAll('.unit-header').forEach(header => {
                 const content = document.getElementById(header.dataset.target);
                 if (content) {
-                    // **UX IMPROVEMENT**: Force expand immediately by setting maxHeight
+                    // UX Improvement: Force expand immediately 
                     content.style.maxHeight = content.scrollHeight + "px";
                     header.classList.add('active'); 
 
@@ -240,7 +236,7 @@
             });
         }
         
-        // ACCORDION CLICK HANDLER (Now collapses/expands on click)
+        // ACCORDION CLICK HANDLER (Collapses/expands on click)
         function handleAccordionClick(event) {
             const header = event.currentTarget;
             const content = document.getElementById(header.dataset.target);
