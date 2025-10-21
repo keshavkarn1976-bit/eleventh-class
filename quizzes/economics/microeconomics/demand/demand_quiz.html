@@ -7,18 +7,18 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script> 
 
-    <script src="../../../js/config.js"></script> 
+    <script src="/eleventh-class/js/config.js"></script> 
 
     <script>
         // Check if credentials are now loaded
         const configError = document.getElementById('config-error');
 
-        // Check if SUPABASE variables are defined (this will fail if config.js 404'd)
         if (typeof window.SUPABASE_URL === 'undefined' || typeof window.SUPABASE_ANON_KEY === 'undefined') {
+            // If this error shows, it means the absolute path also failed.
             if (configError) {
                 configError.style.display = 'block';
             }
-            console.error("Configuration failed: Supabase keys are missing. Double-check the path: ../../../js/config.js AND the capitalization of the 'js' folder.");
+            console.error("Configuration failed: The absolute path /eleventh-class/js/config.js failed. Check file capitalization and existence.");
         } else {
             // Supabase initialization
             const supabase = supabase.createClient(
@@ -44,7 +44,8 @@
             if (error) {
                 console.error('Supabase Query Error:', error);
                 if (quizContainer) {
-                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for RLS or network details!</p>`;
+                    // Check for 401/403 errors in console, which mean RLS is blocking the query
+                    quizContainer.innerHTML = `<p class="error-message">Query Error: ${error.message}. Check browser console for RLS (401/403) or network details!</p>`;
                 }
                 return;
             }
