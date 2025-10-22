@@ -38,7 +38,7 @@
     </header>
 
     <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div id="quiz-container" class="container bg-white p-6 md:p-10 rounded-xl shadow-lg">
+                <div id="quiz-container" class="container bg-white p-4 md:p-6 rounded-xl shadow-lg"> 
             <p class="text-cbse-blue font-semibold">Loading quiz modules...</p>
         </div>
 
@@ -53,7 +53,6 @@
         let QUIZ_DATA = {};
         const TARGET_QUESTION_COUNT = 20;
         
-        // CRITICAL UPDATE: Changed table name to 'elasticity'
         const TABLE_NAME = 'elasticity'; 
 
         // Utility to shuffle and slice an array
@@ -68,25 +67,18 @@
             
             let cleaned = text;
 
-            // FIX: Remove common redundant prefixes (Scenario/Case/Reason) from the start of the raw data.
+            // Remove common redundant prefixes (Scenario/Case/Reason) from the start of the raw data.
             cleaned = cleaned
-                // Regex matches optional ** bolding, then (Scenario|Case|Reason (R)):, then optional ** bolding.
                 .replace(/^\s*\*\*?(Scenario|Case|Reason \(R\)):\*\*\s*/i, '')
                 .trim(); 
 
             // 1. Convert LaTeX price/value notation and cleanup $ signs
             cleaned = cleaned
-                // Convert double dollar signs ($$ ... $$) to HTML for math display
                 .replace(/\$\$(.*?)\$\$/g, '<span class="math-formula inline-block my-1 italic">$1</span>')
-                // Replace \text{...} with just the content
                 .replace(/\\text\{([^\}]+)\}/g, '$1')
-                // Replace \$ with the Rupee symbol
                 .replace(/\\\$/g, '₹')
-                // Replace \\ with a line break (often used for A&R)
                 .replace(/\\\\/g, '<br>')
-                // Remove left/right parentheses/braces used in LaTeX
                 .replace(/\\(left|right)[\(\)\|\{\}]/g, '')
-                // Remove any remaining stray single $ signs (must be last in this chain)
                 .replace(/\$/g, '');
 
             // 2. Convert all other Markdown bolding to HTML strong (for both Q and Options)
@@ -107,11 +99,8 @@
                 difficulty: q.difficulty ? q.difficulty.toLowerCase().trim() : 'medium'
             }));
 
-            // Filter questions using standardized strings
             const simpleQuestions = standardizedData.filter(q => q.difficulty.includes('simple') || q.difficulty.includes('easy'));
             const mediumQuestions = standardizedData.filter(q => q.difficulty.includes('medium') || q.difficulty.includes('moderate'));
-            
-            // Look for 'complex', 'advanced', 'advance', or 'high'
             const complexQuestions = standardizedData.filter(q => 
                 q.difficulty.includes('complex') || 
                 q.difficulty.includes('advanced') || 
@@ -126,9 +115,7 @@
             };
 
             const html = `
-                <h2 class="text-3xl font-extrabold text-cbse-blue mb-8">Choose Your Difficulty Level</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    ${createDifficultyCard('simple', simpleQuestions.length, 'Easy start, covers foundational concepts.', 'bg-accent-green hover:bg-green-700')}
+                <h2 class="text-2xl font-extrabold text-cbse-blue mb-4">Choose Your Difficulty Level</h2>                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">                     ${createDifficultyCard('simple', simpleQuestions.length, 'Easy start, covers foundational concepts.', 'bg-accent-green hover:bg-green-700')}
                     ${createDifficultyCard('medium', mediumQuestions.length, 'Moderate difficulty, requires application of concepts.', 'bg-yellow-600 hover:bg-yellow-700')}
                     ${createDifficultyCard('complex', complexQuestions.length, 'High difficulty, includes numericals and critical analysis.', 'bg-red-600 hover:bg-red-700')}
                 </div>
@@ -144,13 +131,11 @@
             
             const displayName = level.charAt(0).toUpperCase() + level.slice(1);
             
+            // FIX: Reduced padding inside the card (p-6 to p-4) and margin below (mb-4 to mb-3)
             return `
-                <div class="p-6 bg-cbse-light rounded-lg shadow-md border border-gray-200">
-                    <h4 class="text-2xl font-bold capitalize text-cbse-blue mb-2">${displayName === 'Complex' ? 'Advanced' : displayName}</h4>
-                    <p class="text-gray-600 text-sm mb-4">${description}</p>
-                    <p class="text-sm font-semibold mb-4 text-gray-700">Available: ${count} questions. Starting: ${actualCount} questions.</p>
-                    <button 
-                        class="px-6 py-2 text-white font-bold rounded-lg shadow-md transition duration-150 ${colorClass}"
+                <div class="p-4 bg-cbse-light rounded-lg shadow-md border border-gray-200"> 
+                    <h4 class="text-xl font-bold capitalize text-cbse-blue mb-2">${displayName === 'Complex' ? 'Advanced' : displayName}</h4>                     <p class="text-gray-600 text-sm mb-3">${description}</p>                     <p class="text-xs font-semibold mb-3 text-gray-700">Available: ${count} questions. Starting: ${actualCount} questions.</p>                     <button 
+                        class="w-full px-4 py-2 text-white font-bold rounded-lg shadow-md transition duration-150 ${colorClass}"
                         onclick="startQuiz('${level}')">
                         ${buttonText}
                     </button>
@@ -173,7 +158,7 @@
             const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
             const titleDifficulty = displayDifficulty === 'Complex' ? 'Advanced' : displayDifficulty;
 
-            let quizHtml = `<h2 class="text-3xl font-extrabold text-cbse-blue mb-6">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
+            let quizHtml = `<h2 class="text-2xl font-extrabold text-cbse-blue mb-4">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`; // Reduced heading size and margin
             
             QUIZ_DATA.questions.forEach((q, index) => {
                 const questionNumber = index + 1;
@@ -186,37 +171,24 @@
                                         typeString.includes('ar') || 
                                         typeString.includes('assertion');
 
-                // --- QUESTION TEXT FIX (Removing Reason from the Question for AR) ---
+                // --- QUESTION TEXT FIX ---
                 let questionText; 
                 if (isAssertionType) {
-                    // Split at the 'Reason (R):' marker to separate A and R 
                     const assertionPart = rawQuestionText.split(/\*\*Reason \(R\):\*\*/i)[0];
-                    // Clean the Assertion (A) part, which may contain a "Assertion:" prefix
                     questionText = cleanText(assertionPart); 
-                    
                 } else {
-                    // For all other types (MCQ, Case), use the full text and clean it
                     questionText = cleanText(rawQuestionText);
                 }
                 
                 // --- SCENARIO/REASON BLOCK LOGIC ---
-                const hasType = isAssertionType || 
-                                typeString.includes('case'); 
-
-                const hasRawText = q.scenario_reason_text && 
-                                 q.scenario_reason_text.trim() !== '' && 
-                                 q.scenario_reason_text.toUpperCase() !== 'N/A';
-                
+                const hasType = isAssertionType || typeString.includes('case'); 
+                const hasRawText = q.scenario_reason_text && q.scenario_reason_text.trim() !== '' && q.scenario_reason_text.toUpperCase() !== 'N/A';
                 const showScenario = hasType && hasRawText;
-                
-                // Clean the scenario text (the cleanText function now handles removing the duplicate prefix)
                 const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : ''; 
                 const scenarioBoxTitle = isAssertionType ? 'Reason (R):' : 'Scenario:';
 
                 // --- OPTIONS LOGIC ---
                 let options = [];
-
-                // Check for A&R/Assertion types to determine option filtering (use ALL 4 for A&R)
                 if (isAssertionType) {
                     options = [
                         { key: 'A', text: cleanText(q.option_a) },
@@ -225,7 +197,6 @@
                         { key: 'D', text: cleanText(q.option_d) }
                     ];
                 } else {
-                    // For MCQ/Case, filter out empty options
                     options = [
                         { key: 'A', text: cleanText(q.option_a) },
                         { key: 'B', text: cleanText(q.option_b) },
@@ -234,23 +205,22 @@
                     ].filter(opt => opt.text !== null && opt.text.trim() !== '');
                 }
 
+                // FIX 4: Reduced vertical margin of the question card (mb-6 to mb-4)
+                const cardMargin = index < QUIZ_DATA.questions.length - 1 ? 'mb-4' : 'mb-0'; 
+                
                 quizHtml += `
-                    <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                        <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
-                        
+                    <div id="q-card-${index}" class="question-card p-4 ${cardMargin} bg-white border border-gray-200 rounded-lg shadow-sm">                         <p class="text-base font-semibold text-gray-800 mb-2">${questionNumber}. ${questionText}</p>                         
                         ${showScenario && scenarioReasonText ? 
-                            // FIX 1: Removed background, border, and shadow. Reduced padding/margin for tightness.
+                            // FIX 5: Scenario box is now minimalist (p-2 mb-2) with NO border or background
                             `<div class="p-2 mb-2"> 
-                                <p class="text-base font-normal text-gray-800">
-                                    <span class="font-bold text-cbse-blue">${scenarioBoxTitle}</span> ${scenarioReasonText}
+                                <p class="text-sm font-normal text-gray-800">                                     <span class="font-bold text-cbse-blue">${scenarioBoxTitle}</span> ${scenarioReasonText}
                                 </p>
                             </div>` 
                             : ''}
                         
                                                 <div class="options space-y-1"> 
                             ${options.map(opt => `
-                                                                <label class="block p-2 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150">
-                                    <input 
+                                                                <label class="block p-2 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150 text-sm">                                     <input 
                                         type="radio" 
                                         name="q_${index}" 
                                         value="${opt.key}" 
@@ -268,13 +238,11 @@
             quizHtml += `
                 <button 
                     id="submit-button"
-                    class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
-                    onclick="submitQuiz()">
+                    class="w-full mt-4 px-6 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"                     onclick="submitQuiz()">
                     Submit Answers
                 </button>
                 <button 
-                    class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
-                    onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
+                    class="w-full mt-2 text-xs text-gray-500 hover:text-cbse-blue transition duration-150"                     onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
                     Go Back to Difficulty Selection
                 </button>
             `;
@@ -332,11 +300,7 @@
 
             // Display final score
             const scoreHtml = `
-                <div class="p-6 md:p-10 mb-8 text-center bg-cbse-blue text-white rounded-lg shadow-2xl">
-                    <h3 class="text-4xl font-extrabold mb-2">Quiz Complete!</h3>
-                    <p class="text-6xl font-black">${score}/${totalQuestions}</p>
-                    <p class="text-xl font-semibold mt-2">Your Score is: ${((score / totalQuestions) * 100).toFixed(1)}%</p>
-                </div>
+                <div class="p-4 md:p-6 mb-4 text-center bg-cbse-blue text-white rounded-lg shadow-2xl">                     <h3 class="text-3xl font-extrabold mb-1">Quiz Complete!</h3>                     <p class="text-5xl font-black">${score}/${totalQuestions}</p>                     <p class="text-lg font-semibold mt-1">Your Score is: ${((score / totalQuestions) * 100).toFixed(1)}%</p>                 </div>
             `;
             document.getElementById('quiz-container').insertAdjacentHTML('afterbegin', scoreHtml);
             document.getElementById('submit-button').remove(); 
