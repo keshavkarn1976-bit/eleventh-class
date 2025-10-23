@@ -6,6 +6,11 @@
     <title>Market Equilibrium Chapter Quiz</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -48,6 +53,60 @@
     </main>
     
     <script>
+        // ==================================================================================
+        // FIREBASE INITIALIZATION AND LOGGING FUNCTION (ADDED)
+        // ==================================================================================
+        
+        // YOUR FIREBASE CONFIGURATION (Use the same one across all quiz files)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
+            authDomain: "quiz-signon.firebaseapp.com",
+            projectId: "quiz-signon",
+            storageBucket: "quiz-signon.firebasestorage.app",
+            messagingSenderId: "863414222321",
+            appId: "1:863414222321:web:819f5564825308bcd9d850",
+            measurementId: "G-4EFDM0CRYY"
+        };
+
+        // Initialize Firebase App, Auth, and Firestore
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); 
+        const db = app.firestore(); 
+
+        /**
+         * Logs the final score and details to the 'quiz_scores' collection in Firestore.
+         */
+        function logFinalQuizScore(score, total, chapterName, difficulty) {
+            const user = auth.currentUser;
+
+            if (!user) {
+                console.warn("User not logged in. Score not saved.");
+                return;
+            }
+
+            db.collection("quiz_scores").add({ 
+                userId: user.uid,
+                email: user.email || 'N/A',
+                chapter: chapterName,          
+                difficulty: difficulty,        
+                score: score,                  
+                total: total,              
+                percentage: (score / total) * 100,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                action: 'Quiz Completed'
+            })
+            .then(() => {
+                console.log(`Final score ${score}/${total} logged successfully.`);
+            })
+            .catch((error) => {
+                console.error("Error logging final score (Check Rules/Network):", error);
+            });
+        }
+        
+        // ==================================================================================
+        // END FIREBASE SETUP
+        // ==================================================================================
+
         // Global variables to store filtered questions
         let ALL_QUESTIONS = [];
         let QUIZ_DATA = {}; // Stores the 20 questions for the currently active quiz
@@ -82,7 +141,7 @@
             // 2. Convert all other Markdown bolding to HTML strong (for both Q and Options)
             cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             
-            // 3. Specific pattern fix for underlining (only necessary for the old bug)
+            // 3. Specific pattern fix for underlining 
             cleaned = cleaned.replace(/a\s+\*+['"]?([^*'"]+)['"]?\*+\s+in/, 'a <u>$1</u> in');
             
             return cleaned;
@@ -92,44 +151,41 @@
         // --- Core Quiz State Management ---
 
         function renderDifficultySelection(fullData) {
-    // Standardize all difficulty labels to lowercase for robust filtering
-    const standardizedData = fullData.map(q => ({
-        ...q,
-        // Ensure to check if q.difficulty exists before trying to call methods on it
-        difficulty: q.difficulty ? q.difficulty.toLowerCase().trim() : 'medium' // Default to medium if null
-    }));
+            // Standardize all difficulty labels to lowercase for robust filtering
+            const standardizedData = fullData.map(q => ({
+                ...q,
+                // Ensure to check if q.difficulty exists before trying to call methods on it
+                difficulty: q.difficulty ? q.difficulty.toLowerCase().trim() : 'medium' // Default to medium if null
+            }));
 
-    // Filter questions using standardized strings
-    const simpleQuestions = standardizedData.filter(q => q.difficulty.includes('simple') || q.difficulty.includes('easy'));
-    const mediumQuestions = standardizedData.filter(q => q.difficulty.includes('medium') || q.difficulty.includes('moderate'));
-    
-    // FIX: Look for 'advance' to explicitly capture 'Advance' from the database, 
-    // along with 'complex' and 'high'.
-    const complexQuestions = standardizedData.filter(q => 
-        q.difficulty.includes('complex') || 
-        q.difficulty.includes('advanced') || 
-        q.difficulty.includes('advance') || // This is the crucial addition!
-        q.difficulty.includes('high')
-    );
-
-    ALL_QUESTIONS = {
-        simple: simpleQuestions,
-        medium: mediumQuestions,
-        complex: complexQuestions 
-    };
-
-    const html = `
-        <h2 class="text-3xl font-extrabold text-cbse-blue mb-8">Choose Your Difficulty Level</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            ${createDifficultyCard('simple', simpleQuestions.length, 'Easy start, covers foundational concepts.', 'bg-accent-green hover:bg-green-700')}
-            ${createDifficultyCard('medium', mediumQuestions.length, 'Moderate difficulty, requires application of concepts.', 'bg-yellow-600 hover:bg-yellow-700')}
-            ${createDifficultyCard('complex', complexQuestions.length, 'High difficulty, includes numericals and critical analysis.', 'bg-red-600 hover:bg-red-700')}
-        </div>
-    `;
-    document.getElementById('quiz-container').innerHTML = html;
-}
-
+            // Filter questions using standardized strings
+            const simpleQuestions = standardizedData.filter(q => q.difficulty.includes('simple') || q.difficulty.includes('easy'));
+            const mediumQuestions = standardizedData.filter(q => q.difficulty.includes('medium') || q.difficulty.includes('moderate'));
             
+            // Look for 'advance' along with 'complex' and 'high'.
+            const complexQuestions = standardizedData.filter(q => 
+                q.difficulty.includes('complex') || 
+                q.difficulty.includes('advanced') || 
+                q.difficulty.includes('advance') || 
+                q.difficulty.includes('high')
+            );
+
+            ALL_QUESTIONS = {
+                simple: simpleQuestions,
+                medium: mediumQuestions,
+                complex: complexQuestions 
+            };
+
+            const html = `
+                <h2 class="text-3xl font-extrabold text-cbse-blue mb-8">Choose Your Difficulty Level</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    ${createDifficultyCard('simple', simpleQuestions.length, 'Easy start, covers foundational concepts.', 'bg-accent-green hover:bg-green-700')}
+                    ${createDifficultyCard('medium', mediumQuestions.length, 'Moderate difficulty, requires application of concepts.', 'bg-yellow-600 hover:bg-yellow-700')}
+                    ${createDifficultyCard('complex', complexQuestions.length, 'High difficulty, includes numericals and critical analysis.', 'bg-red-600 hover:bg-red-700')}
+                </div>
+            `;
+            document.getElementById('quiz-container').innerHTML = html;
+        }
 
         function createDifficultyCard(level, count, description, colorClass) {
             const actualCount = Math.min(count, TARGET_QUESTION_COUNT);
@@ -161,114 +217,95 @@
 
             renderQuiz();
         }
-function renderQuiz() {
-    const container = document.getElementById('quiz-container');
-    
-    const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
-    const titleDifficulty = displayDifficulty === 'Complex' ? 'Advanced' : displayDifficulty;
-
-    let quizHtml = `<h2 class="text-3xl font-extrabold text-cbse-blue mb-6">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
-    
-    QUIZ_DATA.questions.forEach((q, index) => {
-        const questionNumber = index + 1;
         
-        const questionText = cleanText(q.question_text);
-        
-        // --- SCENARIO/REASON LOGIC ---
-        const typeString = q.question_type ? q.question_type.toLowerCase() : '';
-        const hasType = typeString.includes('a&r') || typeString.includes('case') || typeString.includes('assertion');
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            
+            const displayDifficulty = QUIZ_DATA.difficulty.charAt(0).toUpperCase() + QUIZ_DATA.difficulty.slice(1);
+            const titleDifficulty = displayDifficulty === 'Complex' ? 'Advanced' : displayDifficulty;
 
-        // Check for raw text content to decide if the box should be rendered
-        const hasRawText = q.scenario_reason_text && q.scenario_reason_text.toUpperCase() !== 'N/A';
-        const showScenario = hasType && hasRawText;
+            let quizHtml = `<h2 class="text-3xl font-extrabold text-cbse-blue mb-6">${titleDifficulty} Quiz (${QUIZ_DATA.questions.length} Questions)</h2>`;
+            
+            QUIZ_DATA.questions.forEach((q, index) => {
+                const questionNumber = index + 1;
+                
+                const questionText = cleanText(q.question_text);
+                
+                // --- SCENARIO/REASON LOGIC ---
+                const typeString = q.question_type ? q.question_type.toLowerCase() : '';
+                const hasType = typeString.includes('a&r') || typeString.includes('case') || typeString.includes('assertion');
 
-        // Clean the text only if we decided to display it
-        // The cleanText function will convert **Reason (R):** to <strong>Reason (R):</strong>
-        const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : '';
-        
-        // --- OPTIONS LOGIC ---
-        let options = [];
+                const hasRawText = q.scenario_reason_text && q.scenario_reason_text.toUpperCase() !== 'N/A';
+                const showScenario = hasType && hasRawText;
 
-        if (typeString.includes('a&r') || typeString.includes('assertion')) {
-            options = [
-                { key: 'A', text: cleanText(q.option_a) },
-                { key: 'B', text: cleanText(q.option_b) },
-                { key: 'C', text: cleanText(q.option_c) },
-                { key: 'D', text: cleanText(q.option_d) }
-            ];
-        } else {
-            options = [
-                { key: 'A', text: cleanText(q.option_a) },
-                { key: 'B', text: cleanText(q.option_b) },
-                { key: 'C', text: cleanText(q.option_c) },
-                { key: 'D', text: cleanText(q.option_d) }
-            ].filter(opt => opt.text !== null && opt.text.trim() !== '');
+                const scenarioReasonText = showScenario ? cleanText(q.scenario_reason_text) : '';
+                
+                // --- OPTIONS LOGIC ---
+                let options = [];
+
+                if (typeString.includes('a&r') || typeString.includes('assertion')) {
+                    options = [
+                        { key: 'A', text: cleanText(q.option_a) },
+                        { key: 'B', text: cleanText(q.option_b) },
+                        { key: 'C', text: cleanText(q.option_c) },
+                        { key: 'D', text: cleanText(q.option_d) }
+                    ];
+                } else {
+                    options = [
+                        { key: 'A', text: cleanText(q.option_a) },
+                        { key: 'B', text: cleanText(q.option_b) },
+                        { key: 'C', text: cleanText(q.option_c) },
+                        { key: 'D', text: cleanText(q.option_d) }
+                    ].filter(opt => opt.text !== null && opt.text.trim() !== '');
+                }
+
+                quizHtml += `
+                    <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
+                        
+                        ${showScenario ? 
+                            `<div class="bg-gray-50 p-3 mb-4 shadow-inner">
+                                <p class="text-lg font-normal text-gray-800">
+                                    ${scenarioReasonText}
+                                </p>
+                            </div>` 
+                            : ''}
+                        
+                        <div class="options space-y-2">
+                            ${options.map(opt => `
+                                <label class="block p-3 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150">
+                                    <input 
+                                        type="radio" 
+                                        name="q_${index}" 
+                                        value="${opt.key}" 
+                                        onchange="storeAnswer(${index}, this.value)"
+                                        class="mr-3 text-cbse-blue focus:ring-cbse-blue"
+                                    >
+                                    <span class="font-medium">${opt.key}.</span> ${opt.text}
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            quizHtml += `
+                <button 
+                    id="submit-button"
+                    class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
+                    onclick="submitQuiz()">
+                    Submit Answers
+                </button>
+                <button 
+                    class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
+                    onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
+                    Go Back to Difficulty Selection
+                </button>
+            `;
+
+            container.innerHTML = quizHtml;
         }
-
-        // --- DEBUG OUTPUT BLOCK (For your reference) ---
-        const debugHtml = `
-            <div class="p-2 mb-4 text-xs font-mono bg-yellow-100 border border-yellow-400 rounded">
-                <strong>DEBUG:</strong>
-                Type: ${q.question_type} | 
-                Type Check (A&R/Case): <strong>${hasType}</strong> | 
-                Raw Data (scenario_reason_text): <span class="bg-yellow-200 p-1 rounded">"${q.scenario_reason_text}"</span> | 
-                Content Check: <strong>${hasRawText}</strong> | 
-                Show Scenario: <strong>${showScenario}</strong>
-            </div>
-        `;
-        // --- END DEBUG OUTPUT BLOCK ---
-
-        quizHtml += `
-            <div id="q-card-${index}" class="question-card p-6 mb-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-                <p class="text-lg font-semibold text-gray-800 mb-3">${questionNumber}. ${questionText}</p>
-                
-                ${showScenario ? 
-                    // FIXES: Removed border-l-4 border-cbse-blue and rounded.
-                    // FIXES: Adjusted padding to be minimal (p-2) and kept the background light gray.
-                    // FIXES: Removed the hardcoded <strong> tag for "Reason (R):" / "Scenario:", 
-                    //        as it's included in the cleanText output.
-                    `<div class="bg-gray-50 p-3 mb-4 shadow-inner">
-                        <p class="text-lg font-normal text-gray-800">
-                            ${scenarioReasonText}
-                        </p>
-                    </div>` 
-                    : ''}
-                
-                <div class="options space-y-2">
-                    ${options.map(opt => `
-                        <label class="block p-3 border border-gray-100 rounded-lg cursor-pointer hover:bg-cbse-light transition duration-150">
-                            <input 
-                                type="radio" 
-                                name="q_${index}" 
-                                value="${opt.key}" 
-                                onchange="storeAnswer(${index}, this.value)"
-                                class="mr-3 text-cbse-blue focus:ring-cbse-blue"
-                            >
-                            <span class="font-medium">${opt.key}.</span> ${opt.text}
-                        </label>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    });
-
-    quizHtml += `
-        <button 
-            id="submit-button"
-            class="w-full mt-8 px-8 py-3 text-lg bg-cbse-blue text-white font-bold rounded-lg shadow-xl hover:bg-blue-700 transition duration-150"
-            onclick="submitQuiz()">
-            Submit Answers
-        </button>
-        <button 
-            class="w-full mt-4 text-sm text-gray-500 hover:text-cbse-blue transition duration-150"
-            onclick="renderDifficultySelection(ALL_QUESTIONS.simple.concat(ALL_QUESTIONS.medium, ALL_QUESTIONS.complex))">
-            Go Back to Difficulty Selection
-        </button>
-    `;
-
-    container.innerHTML = quizHtml;
-}
-       
+        
         function storeAnswer(qIndex, answerKey) {
             QUIZ_DATA.answers[qIndex] = answerKey;
         }
@@ -317,6 +354,15 @@ function renderQuiz() {
                 });
             });
 
+            // =========================================================================
+            // FIREBASE LOGGING CALL INSERTED HERE (CRITICAL FIX)
+            // =========================================================================
+            const chapterName = "5. Market Equilibrium"; 
+            const difficultyLevel = QUIZ_DATA.difficulty || "Medium"; 
+            
+            logFinalQuizScore(score, totalQuestions, chapterName, difficultyLevel);
+            // =========================================================================
+            
             // Display final score
             const scoreHtml = `
                 <div class="p-6 md:p-10 mb-8 text-center bg-cbse-blue text-white rounded-lg shadow-2xl">
@@ -356,7 +402,7 @@ function renderQuiz() {
             const container = document.getElementById('quiz-container');
 
             const { data: quizData, error } = await supabaseClient
-                .from(TABLE_NAME) // Uses the new 'equilibrium' table
+                .from(TABLE_NAME) // Uses the 'equilibrium' table
                 .select('*');
 
             if (error) {
