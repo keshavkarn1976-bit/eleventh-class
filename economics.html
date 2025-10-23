@@ -31,7 +31,6 @@
             cursor: pointer;
             @apply shadow-xl hover:shadow-2xl transform hover:-translate-y-1;
         }
-        /* ... (Your existing styles) ... */
         .unit-header {
             cursor: pointer;
             transition: all 0.2s ease-in-out;
@@ -47,7 +46,6 @@
         .back-btn {
             @apply inline-flex items-center text-lg font-medium text-cbse-blue hover:text-cbse-blue/80 mb-6 transition duration-150;
         }
-        /* New Style for Auth Card (Modified to be a centered modal) */
         .auth-container {
             max-width: 400px;
             margin: 0 auto;
@@ -65,7 +63,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 50; /* Above all other content */
+            z-index: 50;
         }
     </style>
 </head>
@@ -172,17 +170,15 @@
     </footer>
 
     <script type="module">
-        // Import the required Firebase functions
         import { 
             initializeApp 
         } from "firebase/app";
         import { 
             getAuth, 
             signInWithPhoneNumber, 
-            onAuthStateChanged, 
+            onIdTokenChanged, 
             RecaptchaVerifier, 
-            signOut,
-            onIdTokenChanged // Added for real-time user status
+            signOut 
         } from "firebase/auth";
 
         // YOUR FIREBASE CONFIGURATION
@@ -200,12 +196,10 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        // --- GLOBAL VARIABLES & FUNCTIONS ---
-        // Expose auth state globally so the standard <script> block can access it
-        window.firebaseAuth = auth;
-        window.isUserLoggedIn = false; // Tracks login status
+        let isUserLoggedIn = false; // Tracks login status
+        let confirmationResult; // Stores OTP result
 
-        // DOM Elements
+        // --- DOM Elements ---
         const authModal = document.getElementById('auth-modal');
         const phoneInputSection = document.getElementById('phone-input-section');
         const otpVerifySection = document.getElementById('otp-verify-section');
@@ -215,65 +209,56 @@
         const phoneNumberInput = document.getElementById('phoneNumber');
         const verificationCodeInput = document.getElementById('verificationCode');
         const errorMessage = document.getElementById('error-message');
+        const unitsList = document.getElementById('units-list');
+        const unitsViewTitle = document.getElementById('units-view-title');
 
-        let confirmationResult;
+        // --- AUTH FUNCTIONS (Exposed to global scope via window) ---
 
-        // Function to show the modal (called by startQuiz in the other script block)
+        function setupRecaptcha() {
+            if (!window.recaptchaVerifier) {
+                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    'size': 'normal', 
+                    'callback': () => {},
+                    'expired-callback': () => {
+                        window.recaptchaVerifier.render();
+                    }
+                });
+                window.recaptchaVerifier.render();
+            } else {
+                window.recaptchaVerifier.render();
+            }
+        }
+        
+        // Expose functions for HTML onclick attributes
         window.showAuthModal = function() {
             authModal.classList.remove('hidden');
             setupRecaptcha();
         }
 
-        // Function to hide the modal
         window.hideAuthModal = function() {
             authModal.classList.add('hidden');
-            // Reset to phone input view
             phoneInputSection.classList.remove('hidden');
             otpVerifySection.classList.add('hidden');
             verificationCodeInput.value = '';
             phoneNumberInput.value = '';
             errorMessage.textContent = '';
             document.getElementById('auth-header').textContent = 'Sign in to Start Quiz';
-            // Force re-render of recaptcha to reset it
             if (window.recaptchaVerifier) {
                 window.recaptchaVerifier.render();
             }
         }
         
-        // Updates the UI elements based on login status
-        function updateUIForLogin(user) {
+        function updateAuthUI(user) {
              if (user) {
-                window.isUserLoggedIn = true;
+                isUserLoggedIn = true;
                 logoutNavBtn.classList.remove('hidden');
             } else {
-                window.isUserLoggedIn = false;
+                isUserLoggedIn = false;
                 logoutNavBtn.classList.add('hidden');
             }
         }
 
-        /**
-         * Initializes reCAPTCHA.
-         */
-        function setupRecaptcha() {
-            // Only initialize if not already done
-            if (!window.recaptchaVerifier) {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                    'size': 'normal', 
-                    'callback': () => {
-                        console.log("reCAPTCHA solved, ready to send OTP");
-                    },
-                    'expired-callback': () => {
-                        console.log("reCAPTCHA expired");
-                        window.recaptchaVerifier.render();
-                    }
-                });
-                window.recaptchaVerifier.render();
-            } else {
-                window.recaptchaVerifier.render(); // Just re-render to reset it
-            }
-        }
-        
-        // --- Event Handlers for Auth ---
+        // --- EVENT LISTENERS for Auth ---
 
         sendOtpBtn.addEventListener('click', async () => {
             const phoneNumber = phoneNumberInput.value;
@@ -291,7 +276,6 @@
             try {
                 confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
                 
-                // Switch to the OTP verification view
                 phoneInputSection.classList.add('hidden');
                 otpVerifySection.classList.remove('hidden');
                 document.getElementById('auth-header').textContent = 'Verify OTP';
@@ -321,7 +305,6 @@
 
             try {
                 await confirmationResult.confirm(code);
-                // SUCCESS: User is signed in. Close the modal and the UI will update
                 window.hideAuthModal(); 
                 alert("Login successful! You can now access the quizzes.");
             } catch (error) {
@@ -341,15 +324,13 @@
             }
         });
 
-        // Use onIdTokenChanged for continuous login status tracking (better than onAuthStateChanged)
+        // Track Auth Status on load and changes
         onIdTokenChanged(auth, (user) => {
-            updateUIForLogin(user);
+            updateAuthUI(user);
         });
-        
-    </script>
 
-    <script>
-        // Data Structure for all three books (Your existing code)
+        // --- YOUR ORIGINAL QUIZ LOGIC (Now merged and using 'window' for HTML access) ---
+        
         const bookData = {
             'Stats': [
                 { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
@@ -370,24 +351,15 @@
             ]
         };
 
-        // Initialize Lucide Icons and Nav Styling
-        lucide.createIcons();
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
-        });
-
-        // ----------------------------------------------------
-        // QUIZ LOGIC - CRITICAL CHANGE IS HERE
-        // ----------------------------------------------------
-        function startQuiz(chapterName) {
-            // CHECK 1: If user is NOT logged in, show the login modal and STOP.
-            if (!window.isUserLoggedIn) {
+        // --- Quiz Enforcement Logic ---
+        window.startQuiz = function(chapterName) {
+            // CRITICAL CHECK: If user is NOT logged in, show the login modal and STOP.
+            if (!isUserLoggedIn) {
                 window.showAuthModal();
                 return; 
             }
             
-            // CHECK 2: If user IS logged in, proceed to quiz navigation.
-            
+            // If logged in, proceed to navigation
             if (chapterName.trim() === '4. Elasticity of Demand') {  
                 window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
                 return;
@@ -403,21 +375,12 @@
                 return;
             }
             
-            if (chapterName.trim() === 'Master Quiz') {
-                alert(`Master Quiz functionality not yet implemented! (But you are logged in to access it.)`);
-                return;
-            }
-            
             const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
             alert(`Quiz not yet implemented for: ${chapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
         }
-        // ----------------------------------------------------
-        // END OF QUIZ LOGIC
-        // ----------------------------------------------------
-
-        // ... (The rest of your existing logic for showView, showUnits, initAccordion, handleAccordionClick) ...
-
-        function showView(viewId) {
+        
+        // --- View Logic ---
+        window.showView = function(viewId) {
             document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
                 view.classList.add('hidden');
             });
@@ -425,10 +388,8 @@
             window.scrollTo(0, 0);
         }
 
-        function showUnits(bookKey, title, color) {
+        window.showUnits = function(bookKey, title, color) {
             const units = bookData[bookKey];
-            const unitsList = document.getElementById('units-list');
-            const unitsViewTitle = document.getElementById('units-view-title');
             
             unitsViewTitle.textContent = title;
             unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
@@ -459,11 +420,11 @@
 
             unitsList.innerHTML = html;
             lucide.createIcons();
-            showView('units');
+            window.showView('units');
             setTimeout(initAccordion, 10);  
         }
 
-        function initAccordion() {
+        window.initAccordion = function() {
             document.querySelectorAll('.unit-header').forEach(header => {
                 const content = document.getElementById(header.dataset.target);
                 if (content) {
@@ -487,6 +448,13 @@
                 content.style.maxHeight = '0';
             }
         }
+
+        // Final initialization calls
+        lucide.createIcons();
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
+        });
+
     </script>
 </body>
 </html>
