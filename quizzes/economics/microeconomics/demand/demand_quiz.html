@@ -6,6 +6,11 @@
     <title>Demand Chapter Quiz</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -48,6 +53,60 @@
     </main>
     
     <script>
+        // ==================================================================================
+        // FIREBASE INITIALIZATION AND LOGGING FUNCTION (New Block)
+        // ==================================================================================
+        
+        // YOUR FIREBASE CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
+            authDomain: "quiz-signon.firebaseapp.com",
+            projectId: "quiz-signon",
+            storageBucket: "quiz-signon.firebasestorage.app",
+            messagingSenderId: "863414222321",
+            appId: "1:863414222321:web:819f5564825308bcd9d850",
+            measurementId: "G-4EFDM0CRYY"
+        };
+
+        // Initialize Firebase App, Auth, and Firestore
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); 
+        const db = app.firestore(); 
+
+        /**
+         * Logs the final score and details to the 'quiz_scores' collection in Firestore.
+         */
+        function logFinalQuizScore(score, total, chapterName, difficulty) {
+            const user = auth.currentUser;
+
+            if (!user) {
+                console.warn("User not logged in. Score not saved.");
+                return;
+            }
+
+            db.collection("quiz_scores").add({ 
+                userId: user.uid,
+                email: user.email || 'N/A',
+                chapter: chapterName,          
+                difficulty: difficulty,        
+                score: score,                  
+                total: total,              
+                percentage: (score / total) * 100,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                action: 'Quiz Completed'
+            })
+            .then(() => {
+                console.log(`Final score ${score}/${total} logged successfully.`);
+            })
+            .catch((error) => {
+                console.error("Error logging final score (Check Rules/Network):", error);
+            });
+        }
+        
+        // ==================================================================================
+        // END FIREBASE SETUP
+        // ==================================================================================
+
         // Global variables to store filtered questions
         let ALL_QUESTIONS = [];
         let QUIZ_DATA = {}; // Stores the 20 questions for the currently active quiz
@@ -275,6 +334,15 @@
                     }
                 });
             });
+            
+            // =========================================================================
+            // FIREBASE LOGGING CALL INSERTED HERE (CRITICAL FIX)
+            // =========================================================================
+            const chapterName = "3. Demand"; 
+            const difficultyLevel = QUIZ_DATA.difficulty || "Medium"; 
+            
+            logFinalQuizScore(score, totalQuestions, chapterName, difficultyLevel);
+            // =========================================================================
 
             // Display final score
             const scoreHtml = `
