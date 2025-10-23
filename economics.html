@@ -166,7 +166,10 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script> <script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+
+    <script>
         // YOUR FIREBASE CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
@@ -181,7 +184,7 @@
         // Initialize Firebase App, Auth, and Firestore using the compatibility layer
         const app = firebase.initializeApp(firebaseConfig);
         const auth = app.auth(); 
-        const db = app.firestore(); // <<< INITIALIZED FIRESTORE
+        const db = app.firestore(); 
         
         let isUserLoggedIn = false; 
 
@@ -276,7 +279,6 @@
             ],
             'Micro': [
                 { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
-                // CLEANED DATA: No apostrophe for robust matching
                 { unit: 'UNIT 5: CONSUMER EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
                 { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
                 { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
@@ -299,19 +301,18 @@
             
             const cleanedChapterName = chapterName.trim();
             
-            // --- LOG THE ATTEMPT TO FIRESTORE ---
+            // --- LOG THE ATTEMPT TO FIRESTORE (Quiz Start) ---
             db.collection("quiz_attempts").add({
                 userId: user.uid,
-                email: user.email || 'N/A', // Log the user's email
+                email: user.email || 'N/A', 
                 chapter: cleanedChapterName,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Use server time for accuracy
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
                 action: 'Quiz Attempted'
             })
             .then(() => {
                 console.log("Quiz attempt logged successfully for:", cleanedChapterName);
             })
             .catch((error) => {
-                // Important: Log the error, but don't prevent the user from taking the quiz
                 console.error("Error logging quiz attempt (Check Firestore Rules!): ", error);
             });
             // --- END LOGIC ---
