@@ -29,7 +29,12 @@
         .book-card {
             transition: all 0.3s ease;
             cursor: pointer;
-            @apply shadow-xl hover:shadow-2xl transform hover:-translate-y-1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06); /* Equivalent of shadow-xl */
+            transform: translate(0);
+        }
+        .book-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); /* Equivalent of shadow-2xl */
+            transform: translateY(-4px); /* Equivalent of -translate-y-1 */
         }
         .unit-header {
             cursor: pointer;
@@ -44,7 +49,16 @@
             transform: rotate(180deg);
         }
         .back-btn {
-            @apply inline-flex items-center text-lg font-medium text-cbse-blue hover:text-cbse-blue/80 mb-6 transition duration-150;
+            display: inline-flex;
+            align-items: center;
+            font-size: 1.125rem; /* lg */
+            font-weight: 500; /* medium */
+            color: #1a3e6a; /* cbse-blue */
+            margin-bottom: 1.5rem; /* mb-6 */
+            transition: color 150ms; /* transition duration-150 */
+        }
+        .back-btn:hover {
+            color: rgba(26, 62, 106, 0.8); /* cbse-blue/80 */
         }
         .auth-container {
             max-width: 400px;
@@ -65,9 +79,8 @@
             align-items: center;
             z-index: 50;
         }
-        /* Custom class added for event listener targeting */
         .book-select-btn {
-            /* No styles, just a marker for JS */
+            /* Marker for JS */
         }
     </style>
 </head>
@@ -173,21 +186,11 @@
         </div>
     </footer>
 
-    <script type="module">
-        // NOTE: If you continue to see "Failed to resolve module specifier 'firebase/app'", 
-        // you must run this file from a local server (e.g., using VS Code Live Server extension or Python SimpleHTTPServer)
-        // or upload it to a web host, as modern browsers restrict module imports from local file paths (file://).
-        import { 
-            initializeApp 
-        } from "firebase/app";
-        import { 
-            getAuth, 
-            signInWithPhoneNumber, 
-            onIdTokenChanged, 
-            RecaptchaVerifier, 
-            signOut 
-        } from "firebase/auth";
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
+
+    <script>
         // YOUR FIREBASE CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
@@ -199,10 +202,10 @@
             measurementId: "G-4EFDM0CRYY"
         };
 
-        // Initialize Firebase App and Auth
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        
+        // Initialize Firebase App and Auth using the compatibility layer
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); 
+
         let isUserLoggedIn = false; 
         let confirmationResult; 
 
@@ -227,7 +230,8 @@
 
         function setupRecaptcha() {
             if (!window.recaptchaVerifier) {
-                window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                // Use firebase.auth.RecaptchaVerifier for compatibility mode
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                     'size': 'normal', 
                     'callback': () => {},
                     'expired-callback': () => {
@@ -286,7 +290,8 @@
             }
 
             try {
-                confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+                // Use auth.signInWithPhoneNumber for compatibility mode
+                confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
                 
                 phoneInputSection.classList.add('hidden');
                 otpVerifySection.classList.remove('hidden');
@@ -329,14 +334,15 @@
 
         logoutNavBtn.addEventListener('click', async () => {
             try {
-                await signOut(auth);
+                await auth.signOut(); // Use auth.signOut for compatibility mode
                 alert("You have been logged out.");
             } catch (error) {
                 console.error("Error signing out:", error);
             }
         });
 
-        onIdTokenChanged(auth, (user) => {
+        // Use auth.onAuthStateChanged for compatibility mode
+        auth.onAuthStateChanged((user) => {
             updateAuthUI(user);
         });
 
@@ -427,11 +433,12 @@
             });
 
             unitsList.innerHTML = html;
-            lucide.createIcons();
+            // Create icons again after injecting new HTML
+            lucide.createIcons(); 
             showView('units');
             
             // Re-attach listeners to the new quiz buttons that were just created
-            attachQuizEventListeners(); 
+            attachEventListeners(); 
             setTimeout(initAccordion, 10);  
         }
 
@@ -439,9 +446,11 @@
             document.querySelectorAll('.unit-header').forEach(header => {
                 const content = document.getElementById(header.dataset.target);
                 if (content) {
-                    content.style.maxHeight = content.scrollHeight + "px";
-                    header.classList.add('active'); 
-
+                    // Check if content is already expanded (default state)
+                    if (header.classList.contains('active')) {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                    
                     header.removeEventListener('click', handleAccordionClick);
                     header.addEventListener('click', handleAccordionClick);
                 }
@@ -460,9 +469,9 @@
             }
         }
 
-        // --- ATTACH EVENT LISTENERS ---
+        // --- ATTACH EVENT LISTENERS (Consolidated) ---
 
-        function attachQuizEventListeners() {
+        function attachEventListeners() {
             // Listener for all "Quiz" buttons (on both initial and unit views)
             document.querySelectorAll('.quiz-start-btn').forEach(button => {
                 button.removeEventListener('click', handleQuizButtonClick); 
@@ -502,8 +511,8 @@
                 link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
             });
 
-            // 2. Attach all initial listeners for the home view elements (Book Cards and Master Quiz)
-            attachQuizEventListeners();
+            // 2. Attach all initial listeners for the home view elements
+            attachEventListeners();
             
             // 3. Attach listener to the header's home button
             headerHomeBtn.addEventListener('click', () => showView('book-select'));
