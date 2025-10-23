@@ -174,11 +174,9 @@
     </footer>
 
     <script type="module">
-        // NOTE: The Firebase import path MUST be a relative or absolute path, 
-        // but since you are using it in a local environment, the browser *might* // try to interpret "firebase/app" as a local file. The error you see is common 
-        // when using module imports directly in HTML without a build tool.
-        // I've kept the standard module imports which *should* work if you are 
-        // serving the page correctly (e.g., via Firebase Hosting or a local server).
+        // NOTE: If you continue to see "Failed to resolve module specifier 'firebase/app'", 
+        // you must run this file from a local server (e.g., using VS Code Live Server extension or Python SimpleHTTPServer)
+        // or upload it to a web host, as modern browsers restrict module imports from local file paths (file://).
         import { 
             initializeApp 
         } from "firebase/app";
@@ -275,7 +273,6 @@
         closeModalBtn.addEventListener('click', hideAuthModal);
 
         sendOtpBtn.addEventListener('click', async () => {
-            // ... (Your existing sendOtpBtn logic - removed for brevity) ...
             const phoneNumber = phoneNumberInput.value;
             errorMessage.textContent = '';
             sendOtpBtn.disabled = true;
@@ -306,7 +303,6 @@
         });
 
         verifyOtpBtn.addEventListener('click', async () => {
-            // ... (Your existing verifyOtpBtn logic - removed for brevity) ...
             const code = verificationCodeInput.value;
             errorMessage.textContent = '';
             verifyOtpBtn.disabled = true;
@@ -347,7 +343,6 @@
         // --- QUIZ DATA & LOGIC ---
         
         const bookData = {
-            // ... (Your existing bookData - removed for brevity) ...
             'Stats': [
                 { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
                 { unit: 'UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA', chapters: ['2. Collection of Data', '3. Organisation of Data', '4. Presentation of Data'] },
@@ -355,4 +350,168 @@
             ],
             'Micro': [
                 { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
-                { unit: 'UNIT 5: CONSUMER\'S EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer\'s Equilibrium', '3. Demand', '4.
+                { unit: 'UNIT 5: CONSUMER\'S EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer\'s Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
+                { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
+                { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
+                { unit: 'REVISION SECTION', chapters: ['Important Questions', 'Value Based Questions', 'Case Based Questions (CBQs)', 'Last Minute Revision'] }
+            ],
+            'IED': [
+                { unit: 'UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)', chapters: ['1. Indian Economy on the Eve of Independence', '2. Indian Economy (1950–1990)', '3. Liberalisation, Privatisation and Globalisation: An Appraisal'] },
+                { unit: 'UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY', chapters: ['4. Human Capital Formation in India', '5. Rural Development', '6. Employment: Growth, Informalisation and Other Issues', '7. Infrastructure', '8. Environment and Sustainable Development'] },
+                { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
+            ]
+        };
+
+        function startQuiz(chapterName) {
+            if (!isUserLoggedIn) {
+                showAuthModal();
+                return; 
+            }
+            
+            // Critical Quiz Links (Untouched)
+            if (chapterName.trim() === '4. Elasticity of Demand') {  
+                window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
+                return;
+            }
+
+            if (chapterName.trim() === "2. Consumer's Equilibrium") {  
+                window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
+                return;
+            }
+            
+            if (chapterName.trim() === '3. Demand') {  
+                window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
+                return;
+            }
+            
+            const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+            alert(`Quiz not yet implemented for: ${chapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
+        }
+        
+        function showView(viewId) {
+            document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewId + '-view').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function showUnits(bookKey, title, color) {
+            const units = bookData[bookKey];
+            
+            unitsViewTitle.textContent = title;
+            unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
+
+            let html = '';
+            units.forEach((unitItem, index) => {
+                const unitId = `${bookKey}-unit-${index}`;
+                
+                let chaptersHtml = unitItem.chapters.map((chapter) => `
+                    <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
+                        <span class="text-gray-700 font-medium">${chapter}</span>
+                        <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">Quiz</button>
+                    </div>
+                `).join('');
+
+                html += `
+                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                        <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="${unitId}">
+                            <span>${unitItem.unit}</span>
+                            <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                        </div>
+                        <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            ${chaptersHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            unitsList.innerHTML = html;
+            lucide.createIcons();
+            showView('units');
+            
+            // Re-attach listeners to the new quiz buttons that were just created
+            attachQuizEventListeners(); 
+            setTimeout(initAccordion, 10);  
+        }
+
+        function initAccordion() {
+            document.querySelectorAll('.unit-header').forEach(header => {
+                const content = document.getElementById(header.dataset.target);
+                if (content) {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    header.classList.add('active'); 
+
+                    header.removeEventListener('click', handleAccordionClick);
+                    header.addEventListener('click', handleAccordionClick);
+                }
+            });
+        }
+        
+        function handleAccordionClick(event) {
+            const header = event.currentTarget;
+            const content = document.getElementById(header.dataset.target);
+            
+            header.classList.toggle('active');
+            if (header.classList.contains('active')) {
+                content.style.maxHeight = content.scrollHeight + "px";
+            } else {
+                content.style.maxHeight = '0';
+            }
+        }
+
+        // --- ATTACH EVENT LISTENERS ---
+
+        function attachQuizEventListeners() {
+            // Listener for all "Quiz" buttons (on both initial and unit views)
+            document.querySelectorAll('.quiz-start-btn').forEach(button => {
+                button.removeEventListener('click', handleQuizButtonClick); 
+                button.addEventListener('click', handleQuizButtonClick);
+            });
+            
+            // Listener for the book cards (Select Book) - Only run on DOMContentLoaded
+            document.querySelectorAll('.book-select-btn').forEach(card => {
+                // Ensure this listener is only added once
+                if (!card.hasAttribute('data-listener-attached')) {
+                    card.addEventListener('click', handleBookSelectClick);
+                    card.setAttribute('data-listener-attached', 'true');
+                }
+            });
+        }
+
+        // --- Event Handlers that use Data Attributes ---
+
+        function handleQuizButtonClick(event) {
+            const chapterName = event.currentTarget.dataset.chapter;
+            startQuiz(chapterName);
+        }
+
+        function handleBookSelectClick(event) {
+            const card = event.currentTarget;
+            const book = card.dataset.book;
+            const title = card.dataset.title;
+            const color = card.dataset.color;
+            showUnits(book, title, color);
+        }
+        
+        // --- Initialization on Document Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Set up nav links and icons
+            lucide.createIcons();
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
+            });
+
+            // 2. Attach all initial listeners for the home view elements (Book Cards and Master Quiz)
+            attachQuizEventListeners();
+            
+            // 3. Attach listener to the header's home button
+            headerHomeBtn.addEventListener('click', () => showView('book-select'));
+
+            // 4. Attach listener to the back button
+            backToBooksBtn.addEventListener('click', () => showView('book-select'));
+        });
+        
+    </script>
+</body>
+</html>
