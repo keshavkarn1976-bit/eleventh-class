@@ -6,6 +6,11 @@
     <title>Price Elasticity of Demand Chapter Quiz</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -48,6 +53,53 @@
     </main>
     
     <script>
+        // Add this inside the <script> tag of your quiz file (e.g., elasticity_quiz.html)
+
+// YOUR FIREBASE CONFIGURATION (Must be the same as economics.html)
+const firebaseConfig = {
+    apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
+    authDomain: "quiz-signon.firebaseapp.com",
+    projectId: "quiz-signon",
+    storageBucket: "quiz-signon.firebasestorage.app",
+    messagingSenderId: "863414222321",
+    appId: "1:863414222321:web:819f5564825308bcd9d850",
+    measurementId: "G-4EFDM0CRYY"
+};
+
+// Initialize Firebase App, Auth, and Firestore
+const app = firebase.initializeApp(firebaseConfig);
+const auth = app.auth(); 
+const db = app.firestore(); 
+
+/**
+ * Logs the final score and details to the 'quiz_scores' collection in Firestore.
+ */
+function logFinalQuizScore(score, total, chapterName, difficulty) {
+    const user = auth.currentUser;
+
+    if (!user) {
+        console.warn("User not logged in. Score not saved.");
+        return;
+    }
+
+    db.collection("quiz_scores").add({ 
+        userId: user.uid,
+        email: user.email || 'N/A',
+        chapter: chapterName,          
+        difficulty: difficulty,        
+        score: score,                  
+        total: total,              
+        percentage: (score / total) * 100,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        action: 'Quiz Completed'
+    })
+    .then(() => {
+        console.log(`Final score ${score}/${total} logged successfully.`);
+    })
+    .catch((error) => {
+        console.error("Error logging final score:", error);
+    });
+}
         let ALL_QUESTIONS = [];
         let QUIZ_DATA = {};
         const TARGET_QUESTION_COUNT = 20;
@@ -301,7 +353,36 @@
 
             document.getElementById('quiz-container').scrollIntoView({ behavior: 'smooth' });
         }
+// ... (The start of your results function) ...
 
+        // Example: Variables used in your results display
+        // The variables 'score' and 'totalQuestions' MUST be defined and calculated 
+        // in your code BEFORE this point.
+
+        // =========================================================================
+        // INSERT THE FIREBASE LOGGING CALL HERE
+        // =========================================================================
+        const chapterName = "4. Elasticity of Demand"; // Adjust if this is a different quiz
+        const difficultyLevel = "Medium";             // Adjust based on the quiz settings
+        
+        // This function call sends the score to Firestore:
+        logFinalQuizScore(score, totalQuestions, chapterName, difficultyLevel);
+        // =========================================================================
+
+        const scoreHtml = `
+            <div class="p-4 md:p-6 mb-4 text-center bg-cbse-blue text-white rounded-lg shadow-2xl"> 
+                <h3 class="text-3xl font-extrabold mb-1">Quiz Complete!</h3> 
+                <p class="text-5xl font-black">${score}/${totalQuestions}</p> 
+                <p class="text-lg font-semibold mt-1">Your Score is: ${((score / totalQuestions) * 100).toFixed(1)}%</p> 
+            </div>
+        `;
+        
+        // ... (The rest of your existing display logic) ...
+        document.getElementById('quiz-container').insertAdjacentHTML('afterbegin', scoreHtml); 
+        document.getElementById('submit-button').remove(); 
+
+        document.getElementById('quiz-container').scrollIntoView({ behavior: 'smooth' });
+    } // End of the results function
 
         // --- Supabase Connection and Initialization ---
 
