@@ -1,459 +1,265 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CBSE Class 11 Economics Curriculum</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Economics Quiz Portal</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        'cbse-blue': '#1a3e6a', 
-                        'cbse-light': '#f0f4f8', 
-                        'accent-green': '#059669', 
-                        'accent-red': '#dc2626', 
-                        'accent-orange': '#ea580c', 
-                        'unit-bg': '#e3f2fd', 
-                    }
-                }
-            }
-        }
-    </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <style>
-        .book-card {
-            transition: all 0.3s ease;
-            cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-            transform: translate(0);
-        }
-        .book-card:hover {
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-            transform: translateY(-4px);
-        }
-        .unit-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease-in-out;
-        }
-        .unit-header.active .icon-rotate {
-            transform: rotate(180deg);
-        }
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            font-size: 1.125rem;
-            font-weight: 500;
-            color: #1a3e6a;
-            margin-bottom: 1.5rem;
-            transition: color 150ms;
-        }
-        .back-btn:hover {
-            color: rgba(26, 62, 106, 0.8);
-        }
-        .auth-container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 2rem;
+        .cbse-blue { background-color: #1a3e6a; }
+        .cbse-light-blue { color: #1a3e6a; }
+        .cta-button {
+            background-color: #008CBA; /* A strong blue for CTA */
+            color: white;
+            padding: 1rem 2rem;
+            font-size: 1.25rem;
             border-radius: 0.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: background-color 0.3s;
         }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 50;
+        .cta-button:hover {
+            background-color: #007399;
         }
     </style>
 </head>
-<body class="bg-cbse-light min-h-screen antialiased">
+<body class="bg-gray-100">
 
-    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center space-x-3 mb-4 md:mb-0 cursor-pointer" id="header-home-btn">
-                <span data-lucide="book-open-check" class="text-cbse-blue w-8 h-8"></span>
-                <h1 class="text-2xl font-extrabold text-cbse-blue">CBSE Class 11 Economics Portal</h1>
+    <header class="cbse-blue text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-2xl font-bold">Economics Quiz Portal</h1>
+        <div id="header-auth-status" class="flex items-center space-x-4">
             </div>
-            <nav class="flex space-x-2 sm:space-x-4">
-                <button id="logout-nav-btn" class="nav-link hidden">🚪 Logout</button>
-            </nav>
-        </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <div id="quiz-content-wrapper"> 
-            <div id="book-select-view" class="view">
-                <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b-2 border-cbse-blue pb-2">Select Your Book</h2>
-                <div class="grid md:grid-cols-3 gap-8">
-                    
-                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-green book-select-btn" data-book="Stats" data-title="Book 1: Statistics for Economics" data-color="accent-green">
-                        <span data-lucide="bar-chart-3" class="w-10 h-10 text-accent-green mb-3"></span>
-                        <h3 class="text-xl font-bold text-gray-800 mb-1">Statistics for Economics</h3>
-                        <p class="text-gray-500 text-sm">Units 1-3 | Data Analysis and Interpretation</p>
-                    </div>
-
-                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-cbse-blue book-select-btn" data-book="Micro" data-title="Book 2: Introductory Microeconomics" data-color="cbse-blue">
-                        <span data-lucide="dollar-sign" class="w-10 h-10 text-cbse-blue mb-3"></span>
-                        <h3 class="text-xl font-bold text-gray-800 mb-1">Introductory Microeconomics</h3>
-                        <p class="text-gray-500 text-sm">Units 4-7 | Consumer, Producer, and Market Theory</p>
-                    </div>
-
-                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-red book-select-btn" data-book="IED" data-title="Book 3: Indian Economic Development" data-color="accent-red">
-                        <span data-lucide="factory" class="w-10 h-10 text-accent-red mb-3"></span>
-                        <h3 class="text-xl font-bold text-gray-800 mb-1">Indian Economic Development</h3>
-                        <p class="text-gray-500 text-sm">Units 1-3 | Economic History and Current Challenges</p>
-                    </div>
-                    
-                </div>
-                
-                <section id="mock-test" class="bg-white p-8 rounded-xl shadow-lg border-t-2 border-b-2 border-cbse-blue mt-12 flex flex-col items-center text-center">
-                    <h4 class="text-3xl font-extrabold text-cbse-blue mb-2">Full Syllabus Mock Test</h4>
-                    <p class="text-gray-600 text-lg mb-4">Test your readiness with a full-length, 90-minute examination covering all CBSE Class 11 Economics chapters.</p>
-                    <button class="px-8 py-3 bg-accent-red text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-150 text-xl quiz-start-btn" data-chapter="Master Quiz">
-                        Start Master Quiz
-                    </button>
-                </section>
-            </div>
-
-            <div id="units-view" class="view hidden">
-                <button id="back-to-books-btn" class="back-btn">
-                    <span data-lucide="arrow-left" class="w-5 h-5 mr-2"></span> Back to Books
-                </button>
-                <h2 id="units-view-title" class="text-3xl font-bold text-gray-800 mb-6 border-b-2 pb-2"></h2>
-                <div id="units-list">
-                </div>
-            </div>
+    <main class="container mx-auto p-4 sm:p-8">
+        <div id="quiz-container" class="bg-white p-6 rounded-lg shadow-xl min-h-[300px] flex flex-col justify-center items-center">
+            <p class="text-xl text-gray-500">Loading quiz content...</p>
         </div>
-        </main>
-
-    <div id="auth-modal" class="modal-overlay hidden">
-        <div id="auth-view" class="auth-container bg-white relative">
-            <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
-                <span data-lucide="x" class="w-6 h-6"></span>
-            </button>
-            <h2 id="auth-header" class="text-2xl font-bold text-center mb-6 text-cbse-blue">
-                Login to Access Quizzes
-            </h2>
-
-            <div class="mt-4">
-                <button id="google-sign-in-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center space-x-3 shadow-md">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_google_g_standard.png" alt="Google logo" class="w-6 h-6 bg-white rounded-full">
-                    <span>Sign in with Google</span>
-                </button>
-            </div>
-
-            <p id="error-message" class="mt-4 text-center text-red-500 font-medium"></p>
-        </div>
-    </div>
-
-    <footer class="bg-cbse-blue mt-12 py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-            <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Redesigned Curriculum View</small>
-        </div>
-    </footer>
-
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+    </main>
 
     <script>
-        // YOUR FIREBASE CONFIGURATION
+        // ----------------------------------------------------------------------
+        // 1. FIREBASE CONFIGURATION (REPLACE WITH YOUR ACTUAL CONFIG)
+        // ----------------------------------------------------------------------
         const firebaseConfig = {
-            apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
-            authDomain: "quiz-signon.firebaseapp.com",
-            projectId: "quiz-signon",
-            storageBucket: "quiz-signon.firebasestorage.app",
-            messagingSenderId: "863414222321",
-            appId: "1:863414222321:web:819f5564825308bcd9d850",
-            measurementId: "G-4EFDM0CRYY"
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
 
-        // Initialize Firebase App, Auth, and Firestore using the compatibility layer
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = app.auth(); 
-        const db = app.firestore(); 
-        
-        let isUserLoggedIn = false; 
-
-        // --- DOM Elements ---
-        const authModal = document.getElementById('auth-modal');
-        const logoutNavBtn = document.getElementById('logout-nav-btn');
-        const errorMessage = document.getElementById('error-message');
-        const unitsList = document.getElementById('units-list');
-        const unitsViewTitle = document.getElementById('units-view-title');
-        const backToBooksBtn = document.getElementById('back-to-books-btn');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const headerHomeBtn = document.getElementById('header-home-btn');
-        const googleSignInBtn = document.getElementById('google-sign-in-btn'); 
-
-        // --- AUTH/MODAL FUNCTIONS ---
-
-        function showAuthModal() {
-            authModal.classList.remove('hidden');
-            errorMessage.textContent = '';
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
         }
 
-        function hideAuthModal() {
-            authModal.classList.add('hidden');
-        }
-        
-        function updateAuthUI(user) {
-             if (user) {
-                isUserLoggedIn = true;
-                logoutNavBtn.classList.remove('hidden');
-            } else {
-                isUserLoggedIn = false;
-                logoutNavBtn.classList.add('hidden');
-            }
-        }
+        const auth = firebase.auth();
+        let db; // Firestore instance will be initialized on successful login
 
-        // --- GOOGLE SIGN-IN LOGIC ---
+        // --- PLACEHOLDER URLS FOR CLOUD FUNCTIONS (MUST BE IMPLEMENTED) ---
+        const CREATE_ORDER_URL = "https://your-firebase-region-your-project-id.cloudfunctions.net/createOrder";
+        const RAZORPAY_KEY_ID = "YOUR_RAZORPAY_KEY_ID"; // Use your public Key ID (rzp_live_...)
 
-        googleSignInBtn.addEventListener('click', async () => {
-            errorMessage.textContent = 'Signing in with Google...';
-            googleSignInBtn.disabled = true;
+        // ----------------------------------------------------------------------
+        // 2. UI RENDERING FUNCTIONS
+        // ----------------------------------------------------------------------
 
-            const provider = new firebase.auth.GoogleAuthProvider();
+        function updateHeaderUI(user) {
+            const headerElement = document.getElementById('header-auth-status');
+            headerElement.innerHTML = ''; // Clear previous content
 
-            try {
-                await auth.signInWithPopup(provider);
-                hideAuthModal(); 
-                alert("Login successful! You can now access the quizzes."); 
-
-            } catch (error) {
-                console.error("Error signing in with Google:", error);
+            if (user) {
+                // Get username from email (before @)
+                const username = user.email ? user.email.split('@')[0] : 'User';
                 
-                let displayMessage = 'Sign-in failed. Check the console for details.';
-                if (error.code === 'auth/popup-closed-by-user') {
-                    displayMessage = 'Sign-in window closed by user.';
-                } else if (error.code === 'auth/cancelled-popup-request') {
-                    displayMessage = 'Sign-in was blocked by a previous attempt.';
-                } else {
-                    displayMessage = 'Google Sign-in failed: ' + error.message;
-                }
-
-                errorMessage.textContent = displayMessage;
-            } finally {
-                 googleSignInBtn.disabled = false;
-            }
-        });
-
-
-        // --- LOGOUT & AUTH STATE ---
-
-        closeModalBtn.addEventListener('click', hideAuthModal);
-
-        logoutNavBtn.addEventListener('click', async () => {
-            try {
-                await auth.signOut();
-                alert("You have been logged out.");
-            } catch (error) {
-                console.error("Error signing out:", error);
-            }
-        });
-
-        auth.onAuthStateChanged((user) => {
-            updateAuthUI(user);
-        });
-
-        // --- QUIZ DATA & LOGIC ---
-        
-        const bookData = {
-            'Stats': [
-                { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
-                { unit: 'UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA', chapters: ['2. Collection of Data', '3. Organisation of Data', '4. Presentation of Data'] },
-                { unit: 'UNIT 3: STATISTICAL TOOLS AND INTERPRETATION', chapters: ['5. Measures of Central Tendency', '6. Measures of Dispersion', '7. Correlation', '8. Index Numbers', '9. Use of Statistical Tools (Project)'] }
-            ],
-            'Micro': [
-                { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
-                { unit: 'UNIT 5: CONSUMER EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
-                { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
-                { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
-                { unit: 'REVISION SECTION', chapters: ['Important Questions', 'Value Based Questions', 'Case Based Questions (CBQs)', 'Last Minute Revision'] }
-            ],
-            'IED': [
-                { unit: 'UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)', chapters: ['1. Indian Economy on the Eve of Independence', '2. Indian Economy (1950–1990)', '3. Liberalisation, Privatisation and Globalisation: An Appraisal'] },
-                { unit: 'UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY', chapters: ['4. Human Capital Formation in India', '5. Rural Development', '6. Employment: Growth, Informalisation and Other Issues', '7. Infrastructure', '8. Environment and Sustainable Development'] },
-                { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
-            ]
-        };
-
-        function startQuiz(chapterName) {
-            const user = auth.currentUser;
-            
-            if (!user) {
-                showAuthModal();
-                return; 
-            }
-            
-            const cleanedChapterName = chapterName.trim();
-            
-            // --- LOG THE ATTEMPT TO FIRESTORE (Quiz Start) ---
-            db.collection("quiz_attempts").add({
-                userId: user.uid,
-                email: user.email || 'N/A', 
-                chapter: cleanedChapterName,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
-                action: 'Quiz Attempted'
-            })
-            .then(() => {
-                console.log("Quiz attempt logged successfully for:", cleanedChapterName);
-            })
-            .catch((error) => {
-                console.error("Error logging quiz attempt (Check Firestore Rules!): ", error);
-            });
-            // --- END LOGIC ---
-            
-            // Existing Quiz Navigation Logic
-            if (cleanedChapterName.includes('4. Elasticity of Demand')) {  
-                window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
-                return;
-            }
-
-            if (cleanedChapterName.includes("2. Consumer Equilibrium")) {  
-                window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
-                return;
-            }
-
-            if (cleanedChapterName.includes('3. Demand')) {  
-                window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
-                return;
-            }
-            
-            // Default alert for unimplemented quizzes
-            const urlSafeName = cleanedChapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
-            alert(`Quiz not yet implemented for: ${cleanedChapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
-        }
-        
-        function showView(viewId) {
-            document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
-                view.classList.add('hidden');
-            });
-            document.getElementById(viewId + '-view').classList.remove('hidden');
-            window.scrollTo(0, 0);
-        }
-
-        function showUnits(bookKey, title, color) {
-            const units = bookData[bookKey];
-            
-            unitsViewTitle.textContent = title;
-            unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
-
-            let html = '';
-            units.forEach((unitItem, index) => {
-                const unitId = `${bookKey}-unit-${index}`;
-                
-                let chaptersHtml = unitItem.chapters.map((chapter) => `
-                    <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
-                        <span class="text-gray-700 font-medium">${chapter}</span>
-                        <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">Quiz</button>
-                    </div>
-                `).join('');
-
-                html += `
-                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
-                        <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="${unitId}">
-                            <span>${unitItem.unit}</span>
-                            <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
-                        </div>
-                        <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                            ${chaptersHtml}
-                        </div>
-                    </div>
+                headerElement.innerHTML = `
+                    <span class="text-lg font-semibold">Welcome, ${username}!</span>
+                    <button id="logout-button" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded text-sm">Logout</button>
                 `;
-            });
-
-            unitsList.innerHTML = html;
-            lucide.createIcons(); 
-            showView('units');
-            
-            attachEventListeners(); 
-            setTimeout(initAccordion, 10);  
-        }
-
-        function initAccordion() {
-            document.querySelectorAll('.unit-header').forEach(header => {
-                const content = document.getElementById(header.dataset.target);
-                if (content) {
-                    if (header.classList.contains('active')) {
-                        content.style.maxHeight = content.scrollHeight + "px";
-                    }
-                    
-                    header.removeEventListener('click', handleAccordionClick);
-                    header.addEventListener('click', handleAccordionClick);
-                }
-            });
-        }
-        
-        function handleAccordionClick(event) {
-            const header = event.currentTarget;
-            const content = document.getElementById(header.dataset.target);
-            
-            header.classList.toggle('active');
-            if (header.classList.contains('active')) {
-                content.style.maxHeight = content.scrollHeight + "px";
+                document.getElementById('logout-button').addEventListener('click', () => {
+                    auth.signOut();
+                });
             } else {
-                content.style.maxHeight = '0';
+                headerElement.innerHTML = `
+                    <span class="text-lg font-semibold">Guest</span>
+                `;
             }
         }
 
-        // --- ATTACH EVENT LISTENERS (Consolidated) ---
+        function renderQuizSelection() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = `
+                <h2 class="text-3xl text-cbse-light-blue font-bold mb-6">Select Quiz Difficulty</h2>
+                <div class="flex flex-col space-y-4 w-full max-w-sm">
+                    <button class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded" onclick="startQuiz('Simple')">Simple (10 Questions)</button>
+                    <button class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-3 px-4 rounded" onclick="startQuiz('Medium')">Medium (20 Questions)</button>
+                    <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded" onclick="startQuiz('Advanced')">Advanced (30 Questions)</button>
+                </div>
+                <p class="mt-6 text-sm text-gray-500">Note: This is a placeholder; quiz content display logic is needed here.</p>
+            `;
+        }
 
-        function attachEventListeners() {
-            document.querySelectorAll('.quiz-start-btn').forEach(button => {
-                button.removeEventListener('click', handleQuizButtonClick); 
-                button.addEventListener('click', handleQuizButtonClick);
-            });
+        function renderPaymentCTA() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = `
+                <h2 class="text-3xl text-red-600 font-extrabold mb-4">Access Restricted</h2>
+                <p class="text-xl text-gray-700 mb-8 text-center">Unlock all quiz modules (Simple, Medium, Advanced) with a one-time payment.</p>
+                <button id="pay-now-button" class="cta-button shadow-lg hover:shadow-xl" onclick="initiatePayment()">
+                    Pay Now - ₹99
+                </button>
+                <p class="mt-6 text-sm text-gray-500">Payment is secured by Razorpay.</p>
+            `;
+        }
+        
+        function renderLoginPrompt() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = `
+                <h2 class="text-3xl text-cbse-light-blue font-bold mb-4">Welcome to the Portal</h2>
+                <p class="text-xl text-gray-700 mb-8 text-center">Please log in to access the quizzes.</p>
+                <p class="text-md text-gray-500">Go to the main website's login page.</p>
+            `;
+        }
+
+        // ----------------------------------------------------------------------
+        // 3. CORE LOGIC (Payment Check and Initiation)
+        // ----------------------------------------------------------------------
+
+        function initFirestore() {
+            if (!db) {
+                db = firebase.firestore();
+            }
+        }
+        
+        // This function checks the persistent payment status in Firestore
+        async function checkUserPaymentStatus(user) {
+            initFirestore();
             
-            document.querySelectorAll('.book-select-btn').forEach(card => {
-                if (!card.hasAttribute('data-listener-attached')) {
-                    card.addEventListener('click', handleBookSelectClick);
-                    card.setAttribute('data-listener-attached', 'true');
+            try {
+                // Document ID is the user's UID
+                const docRef = db.collection('user_payment').doc(user.uid);
+                const doc = await docRef.get();
+                
+                // If document exists and hasPaid is true, access is granted
+                return doc.exists && doc.data().hasPaid === true;
+            } catch (error) {
+                console.error("Error reading payment status:", error);
+                // Fail-safe: Assume payment is required if check fails
+                return false; 
+            }
+        }
+
+        // Razorpay Payment Initiation
+        async function initiatePayment() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Authentication error. Please log in again.");
+                return;
+            }
+
+            // 1. Call YOUR secure backend (Cloud Function) to create a Razorpay Order
+            document.getElementById('quiz-container').innerHTML = 
+                '<p class="text-xl text-cbse-light-blue font-semibold">Preparing payment gateway...</p>';
+
+            try {
+                const orderResponse = await fetch(CREATE_ORDER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // Pass necessary info securely to the server
+                    body: JSON.stringify({ 
+                        userId: user.uid, 
+                        amount: 9900, // Amount in paise (₹99.00)
+                        email: user.email 
+                    })
+                });
+                
+                const orderData = await orderResponse.json();
+                
+                if (orderData.error || !orderData.id) {
+                    throw new Error(orderData.error || "Failed to create order on server.");
                 }
-            });
+                
+                // 2. Open the Razorpay Checkout Popup
+                const options = {
+                    key: RAZORPAY_KEY_ID, // YOUR Public Key ID
+                    amount: orderData.amount, 
+                    currency: "INR",
+                    name: "Ready4Industry",
+                    description: "Full Quiz Access",
+                    order_id: orderData.id,
+                    handler: function (response) {
+                        // Success on the client side. 
+                        // The actual database unlock MUST be verified by the server-side Webhook!
+                        document.getElementById('quiz-container').innerHTML = 
+                            '<h2 class="text-2xl text-green-600 font-bold mb-4">Payment Initiated!</h2>' +
+                            '<p class="text-lg text-gray-700">Verifying payment status now. Access should be granted shortly.</p>';
+                        
+                        // We rely on the backend webhook for the actual unlock.
+                        // Refresh the page or re-check auth state after a delay if needed.
+                        setTimeout(() => auth.currentUser.reload().then(() => checkAccess()), 5000);
+                    },
+                    prefill: {
+                        name: user.displayName || user.email.split('@')[0],
+                        email: user.email
+                    },
+                    theme: { color: '#1a3e6a' }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+
+            } catch (error) {
+                console.error("Payment initiation failed:", error);
+                document.getElementById('quiz-container').innerHTML = 
+                    `<h2 class="text-2xl text-red-600 font-bold mb-4">Payment Failed</h2>` +
+                    `<p class="text-lg text-gray-700">${error.message}. Please try again.</p>`;
+            }
         }
 
-        // --- Event Handlers that use Data Attributes ---
-
-        function handleQuizButtonClick(event) {
-            const chapterName = event.currentTarget.dataset.chapter;
-            startQuiz(chapterName);
+        // Function called to determine if quiz should be shown or payment CTA
+        async function checkAccess() {
+            const user = auth.currentUser;
+            if (user) {
+                const hasPaid = await checkUserPaymentStatus(user);
+                if (hasPaid) {
+                    renderQuizSelection();
+                } else {
+                    renderPaymentCTA();
+                }
+            } else {
+                renderLoginPrompt();
+            }
         }
 
-        function handleBookSelectClick(event) {
-            const card = event.currentTarget;
-            const book = card.dataset.book;
-            const title = card.dataset.title;
-            const color = card.dataset.color;
-            showUnits(book, title, color);
+        // Simple placeholder for the quiz function
+        function startQuiz(difficulty) {
+            alert(`Starting ${difficulty} Quiz! (Requires quiz rendering logic)`);
+            // Here you would load the actual quiz questions for the selected difficulty
         }
-        
-        // --- Initialization on Document Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
-            });
 
-            attachEventListeners();
+
+        // ----------------------------------------------------------------------
+        // 4. FIREBASE AUTH STATE LISTENER (Entry Point)
+        // ----------------------------------------------------------------------
+
+        auth.onAuthStateChanged(user => {
+            updateHeaderUI(user);
             
-            headerHomeBtn.addEventListener('click', () => showView('book-select'));
-            backToBooksBtn.addEventListener('click', () => showView('book-select'));
+            if (user) {
+                // Logged In: Check payment status to determine access
+                checkAccess();
+            } else {
+                // Logged Out: Prompt for login
+                renderLoginPrompt();
+            }
         });
-        
     </script>
 </body>
 </html>
