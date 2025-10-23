@@ -429,22 +429,22 @@
             // Trim the chapter name for robust comparison
             const cleanedChapterName = chapterName.trim();
             
-            // Critical Quiz Links (FIXED LOGIC)
+            // Critical Quiz Links (USING INCLUDES() FOR ROBUST MATCHING)
             
             // 1. Elasticity of Demand
-            if (cleanedChapterName === '4. Elasticity of Demand') {  
+            if (cleanedChapterName.includes('4. Elasticity of Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
                 return;
             }
 
-            // 2. Consumer's Equilibrium (FIXED to match string from bookData)
-            if (cleanedChapterName === "2. Consumer's Equilibrium") {  
+            // 2. Consumer's Equilibrium 
+            if (cleanedChapterName.includes("2. Consumer's Equilibrium")) {  
                 window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
                 return;
             }
 
             // 3. Demand
-            if (cleanedChapterName === '3. Demand') {  
+            if (cleanedChapterName.includes('3. Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
                 return;
             }
