@@ -398,7 +398,7 @@
             updateAuthUI(user);
         });
 
-        // --- QUIZ DATA & LOGIC (Unchanged) ---
+        // --- QUIZ DATA & LOGIC ---
         
         const bookData = {
             'Stats': [
@@ -426,24 +426,32 @@
                 return; 
             }
             
-            // Critical Quiz Links (Untouched)
-            if (chapterName.trim() === '4. Elasticity of Demand') {  
+            // Trim the chapter name for robust comparison
+            const cleanedChapterName = chapterName.trim();
+            
+            // Critical Quiz Links (FIXED LOGIC)
+            
+            // 1. Elasticity of Demand
+            if (cleanedChapterName === '4. Elasticity of Demand') {  
                 window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
                 return;
             }
 
-            if (chapterName.trim() === "2. Consumer's Equilibrium") {  
+            // 2. Consumer's Equilibrium (FIXED to match string from bookData)
+            if (cleanedChapterName === "2. Consumer's Equilibrium") {  
                 window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
                 return;
             }
-            
-            if (chapterName.trim() === '3. Demand') {  
+
+            // 3. Demand
+            if (cleanedChapterName === '3. Demand') {  
                 window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
                 return;
             }
             
-            const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
-            alert(`Quiz not yet implemented for: ${chapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
+            // Default alert for unimplemented quizzes
+            const urlSafeName = cleanedChapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+            alert(`Quiz not yet implemented for: ${cleanedChapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
         }
         
         function showView(viewId) {
@@ -464,6 +472,7 @@
             units.forEach((unitItem, index) => {
                 const unitId = `${bookKey}-unit-${index}`;
                 
+                // Chapter names are escaped when creating data-chapter attribute
                 let chaptersHtml = unitItem.chapters.map((chapter) => `
                     <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
                         <span class="text-gray-700 font-medium">${chapter}</span>
