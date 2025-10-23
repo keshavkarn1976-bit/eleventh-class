@@ -166,9 +166,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-
-    <script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script> <script>
         // YOUR FIREBASE CONFIGURATION
         const firebaseConfig = {
             apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
@@ -180,12 +178,13 @@
             measurementId: "G-4EFDM0CRYY"
         };
 
-        // Initialize Firebase App and Auth using the compatibility layer
+        // Initialize Firebase App, Auth, and Firestore using the compatibility layer
         const app = firebase.initializeApp(firebaseConfig);
         const auth = app.auth(); 
-
-        let isUserLoggedIn = false; 
+        const db = app.firestore(); // <<< INITIALIZED FIRESTORE
         
+        let isUserLoggedIn = false; 
+
         // --- DOM Elements ---
         const authModal = document.getElementById('auth-modal');
         const logoutNavBtn = document.getElementById('logout-nav-btn');
@@ -201,7 +200,6 @@
 
         function showAuthModal() {
             authModal.classList.remove('hidden');
-            // Remove any previous error message
             errorMessage.textContent = '';
         }
 
@@ -230,7 +228,6 @@
             try {
                 await auth.signInWithPopup(provider);
                 hideAuthModal(); 
-                // Alert is now handled by the state change listener below, but kept for immediate feedback
                 alert("Login successful! You can now access the quizzes."); 
 
             } catch (error) {
@@ -248,7 +245,6 @@
                 errorMessage.textContent = displayMessage;
             } finally {
                  googleSignInBtn.disabled = false;
-                 // Note: errorMessage is intentionally left to display error until user closes the modal
             }
         });
 
@@ -280,7 +276,7 @@
             ],
             'Micro': [
                 { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
-                // *** CLEANED DATA: Removed apostrophe for consistency and reliability ***
+                // CLEANED DATA: No apostrophe for robust matching
                 { unit: 'UNIT 5: CONSUMER EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
                 { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
                 { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
@@ -294,28 +290,43 @@
         };
 
         function startQuiz(chapterName) {
-            if (!isUserLoggedIn) {
+            const user = auth.currentUser;
+            
+            if (!user) {
                 showAuthModal();
                 return; 
             }
             
             const cleanedChapterName = chapterName.trim();
             
-            // Critical Quiz Links (ROBUST CHECKING WITH INCLUDES())
+            // --- LOG THE ATTEMPT TO FIRESTORE ---
+            db.collection("quiz_attempts").add({
+                userId: user.uid,
+                email: user.email || 'N/A', // Log the user's email
+                chapter: cleanedChapterName,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(), // Use server time for accuracy
+                action: 'Quiz Attempted'
+            })
+            .then(() => {
+                console.log("Quiz attempt logged successfully for:", cleanedChapterName);
+            })
+            .catch((error) => {
+                // Important: Log the error, but don't prevent the user from taking the quiz
+                console.error("Error logging quiz attempt (Check Firestore Rules!): ", error);
+            });
+            // --- END LOGIC ---
             
-            // 1. Elasticity of Demand
+            // Existing Quiz Navigation Logic
             if (cleanedChapterName.includes('4. Elasticity of Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
                 return;
             }
 
-            // 2. Consumer Equilibrium (Checking against the cleaned name)
             if (cleanedChapterName.includes("2. Consumer Equilibrium")) {  
                 window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
                 return;
             }
 
-            // 3. Demand
             if (cleanedChapterName.includes('3. Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
                 return;
@@ -344,7 +355,6 @@
             units.forEach((unitItem, index) => {
                 const unitId = `${bookKey}-unit-${index}`;
                 
-                // Chapter names are escaped when creating data-chapter attribute
                 let chaptersHtml = unitItem.chapters.map((chapter) => `
                     <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
                         <span class="text-gray-700 font-medium">${chapter}</span>
