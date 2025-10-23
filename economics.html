@@ -65,13 +65,17 @@
             align-items: center;
             z-index: 50;
         }
+        /* Custom class added for event listener targeting */
+        .book-select-btn {
+            /* No styles, just a marker for JS */
+        }
     </style>
 </head>
 <body class="bg-cbse-light min-h-screen antialiased">
 
     <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center space-x-3 mb-4 md:mb-0 cursor-pointer" onclick="showView('book-select')">
+            <div class="flex items-center space-x-3 mb-4 md:mb-0 cursor-pointer" id="header-home-btn">
                 <span data-lucide="book-open-check" class="text-cbse-blue w-8 h-8"></span>
                 <h1 class="text-2xl font-extrabold text-cbse-blue">CBSE Class 11 Economics Portal</h1>
             </div>
@@ -88,19 +92,19 @@
                 <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b-2 border-cbse-blue pb-2">Select Your Book</h2>
                 <div class="grid md:grid-cols-3 gap-8">
                     
-                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-green" onclick="showUnits('Stats', 'Book 1: Statistics for Economics', 'accent-green')">
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-green book-select-btn" data-book="Stats" data-title="Book 1: Statistics for Economics" data-color="accent-green">
                         <span data-lucide="bar-chart-3" class="w-10 h-10 text-accent-green mb-3"></span>
                         <h3 class="text-xl font-bold text-gray-800 mb-1">Statistics for Economics</h3>
                         <p class="text-gray-500 text-sm">Units 1-3 | Data Analysis and Interpretation</p>
                     </div>
 
-                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-cbse-blue" onclick="showUnits('Micro', 'Book 2: Introductory Microeconomics', 'cbse-blue')">
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-cbse-blue book-select-btn" data-book="Micro" data-title="Book 2: Introductory Microeconomics" data-color="cbse-blue">
                         <span data-lucide="dollar-sign" class="w-10 h-10 text-cbse-blue mb-3"></span>
                         <h3 class="text-xl font-bold text-gray-800 mb-1">Introductory Microeconomics</h3>
                         <p class="text-gray-500 text-sm">Units 4-7 | Consumer, Producer, and Market Theory</p>
                     </div>
 
-                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-red" onclick="showUnits('IED', 'Book 3: Indian Economic Development', 'accent-red')">
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-red book-select-btn" data-book="IED" data-title="Book 3: Indian Economic Development" data-color="accent-red">
                         <span data-lucide="factory" class="w-10 h-10 text-accent-red mb-3"></span>
                         <h3 class="text-xl font-bold text-gray-800 mb-1">Indian Economic Development</h3>
                         <p class="text-gray-500 text-sm">Units 1-3 | Economic History and Current Challenges</p>
@@ -111,14 +115,14 @@
                 <section id="mock-test" class="bg-white p-8 rounded-xl shadow-lg border-t-2 border-b-2 border-cbse-blue mt-12 flex flex-col items-center text-center">
                     <h4 class="text-3xl font-extrabold text-cbse-blue mb-2">Full Syllabus Mock Test</h4>
                     <p class="text-gray-600 text-lg mb-4">Test your readiness with a full-length, 90-minute examination covering all CBSE Class 11 Economics chapters.</p>
-                    <button onclick="startQuiz('Master Quiz')" class="px-8 py-3 bg-accent-red text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-150 text-xl">
+                    <button class="px-8 py-3 bg-accent-red text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-150 text-xl quiz-start-btn" data-chapter="Master Quiz">
                         Start Master Quiz
                     </button>
                 </section>
             </div>
 
             <div id="units-view" class="view hidden">
-                <button onclick="showView('book-select')" class="back-btn">
+                <button id="back-to-books-btn" class="back-btn">
                     <span data-lucide="arrow-left" class="w-5 h-5 mr-2"></span> Back to Books
                 </button>
                 <h2 id="units-view-title" class="text-3xl font-bold text-gray-800 mb-6 border-b-2 pb-2"></h2>
@@ -130,7 +134,7 @@
 
     <div id="auth-modal" class="modal-overlay hidden">
         <div id="auth-view" class="auth-container bg-white relative">
-            <button onclick="hideAuthModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
+            <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
                 <span data-lucide="x" class="w-6 h-6"></span>
             </button>
             <h2 id="auth-header" class="text-2xl font-bold text-center mb-6 text-indigo-600">
@@ -170,6 +174,11 @@
     </footer>
 
     <script type="module">
+        // NOTE: The Firebase import path MUST be a relative or absolute path, 
+        // but since you are using it in a local environment, the browser *might* // try to interpret "firebase/app" as a local file. The error you see is common 
+        // when using module imports directly in HTML without a build tool.
+        // I've kept the standard module imports which *should* work if you are 
+        // serving the page correctly (e.g., via Firebase Hosting or a local server).
         import { 
             initializeApp 
         } from "firebase/app";
@@ -196,8 +205,8 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         
-        let isUserLoggedIn = false; // Tracks login status
-        let confirmationResult; // Stores OTP result
+        let isUserLoggedIn = false; 
+        let confirmationResult; 
 
         // --- DOM Elements ---
         const authModal = document.getElementById('auth-modal');
@@ -211,8 +220,12 @@
         const errorMessage = document.getElementById('error-message');
         const unitsList = document.getElementById('units-list');
         const unitsViewTitle = document.getElementById('units-view-title');
+        const backToBooksBtn = document.getElementById('back-to-books-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const headerHomeBtn = document.getElementById('header-home-btn');
 
-        // --- AUTH FUNCTIONS (Exposed to global scope via window) ---
+
+        // --- AUTH/MODAL FUNCTIONS ---
 
         function setupRecaptcha() {
             if (!window.recaptchaVerifier) {
@@ -229,13 +242,12 @@
             }
         }
         
-        // Expose functions for HTML onclick attributes
-        window.showAuthModal = function() {
+        function showAuthModal() {
             authModal.classList.remove('hidden');
             setupRecaptcha();
         }
 
-        window.hideAuthModal = function() {
+        function hideAuthModal() {
             authModal.classList.add('hidden');
             phoneInputSection.classList.remove('hidden');
             otpVerifySection.classList.add('hidden');
@@ -258,9 +270,12 @@
             }
         }
 
-        // --- EVENT LISTENERS for Auth ---
+        // --- AUTH Event Listeners ---
+
+        closeModalBtn.addEventListener('click', hideAuthModal);
 
         sendOtpBtn.addEventListener('click', async () => {
+            // ... (Your existing sendOtpBtn logic - removed for brevity) ...
             const phoneNumber = phoneNumberInput.value;
             errorMessage.textContent = '';
             sendOtpBtn.disabled = true;
@@ -291,6 +306,7 @@
         });
 
         verifyOtpBtn.addEventListener('click', async () => {
+            // ... (Your existing verifyOtpBtn logic - removed for brevity) ...
             const code = verificationCodeInput.value;
             errorMessage.textContent = '';
             verifyOtpBtn.disabled = true;
@@ -305,7 +321,7 @@
 
             try {
                 await confirmationResult.confirm(code);
-                window.hideAuthModal(); 
+                hideAuthModal(); 
                 alert("Login successful! You can now access the quizzes.");
             } catch (error) {
                 console.error("Error verifying OTP:", error);
@@ -324,14 +340,14 @@
             }
         });
 
-        // Track Auth Status on load and changes
         onIdTokenChanged(auth, (user) => {
             updateAuthUI(user);
         });
 
-        // --- YOUR ORIGINAL QUIZ LOGIC (Now merged and using 'window' for HTML access) ---
+        // --- QUIZ DATA & LOGIC ---
         
         const bookData = {
+            // ... (Your existing bookData - removed for brevity) ...
             'Stats': [
                 { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
                 { unit: 'UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA', chapters: ['2. Collection of Data', '3. Organisation of Data', '4. Presentation of Data'] },
@@ -339,122 +355,4 @@
             ],
             'Micro': [
                 { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
-                { unit: 'UNIT 5: CONSUMER\'S EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer\'s Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
-                { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
-                { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
-                { unit: 'REVISION SECTION', chapters: ['Important Questions', 'Value Based Questions', 'Case Based Questions (CBQs)', 'Last Minute Revision'] }
-            ],
-            'IED': [
-                { unit: 'UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)', chapters: ['1. Indian Economy on the Eve of Independence', '2. Indian Economy (1950–1990)', '3. Liberalisation, Privatisation and Globalisation: An Appraisal'] },
-                { unit: 'UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY', chapters: ['4. Human Capital Formation in India', '5. Rural Development', '6. Employment: Growth, Informalisation and Other Issues', '7. Infrastructure', '8. Environment and Sustainable Development'] },
-                { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
-            ]
-        };
-
-        // --- Quiz Enforcement Logic ---
-        window.startQuiz = function(chapterName) {
-            // CRITICAL CHECK: If user is NOT logged in, show the login modal and STOP.
-            if (!isUserLoggedIn) {
-                window.showAuthModal();
-                return; 
-            }
-            
-            // If logged in, proceed to navigation
-            if (chapterName.trim() === '4. Elasticity of Demand') {  
-                window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
-                return;
-            }
-
-            if (chapterName.trim() === "2. Consumer's Equilibrium") {  
-                window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
-                return;
-            }
-            
-            if (chapterName.trim() === '3. Demand') {  
-                window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
-                return;
-            }
-            
-            const urlSafeName = chapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
-            alert(`Quiz not yet implemented for: ${chapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
-        }
-        
-        // --- View Logic ---
-        window.showView = function(viewId) {
-            document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
-                view.classList.add('hidden');
-            });
-            document.getElementById(viewId + '-view').classList.remove('hidden');
-            window.scrollTo(0, 0);
-        }
-
-        window.showUnits = function(bookKey, title, color) {
-            const units = bookData[bookKey];
-            
-            unitsViewTitle.textContent = title;
-            unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
-
-            let html = '';
-            units.forEach((unitItem, index) => {
-                const unitId = `${bookKey}-unit-${index}`;
-                
-                let chaptersHtml = unitItem.chapters.map((chapter) => `
-                    <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
-                        <span class="text-gray-700 font-medium">${chapter}</span>
-                        <button onclick="startQuiz('${chapter.replace(/'/g, '\\\'')}')" class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition">Quiz</button>
-                    </div>
-                `).join('');
-
-                html += `
-                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
-                        <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="${unitId}">
-                            <span>${unitItem.unit}</span>
-                            <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
-                        </div>
-                        <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                            ${chaptersHtml}
-                        </div>
-                    </div>
-                `;
-            });
-
-            unitsList.innerHTML = html;
-            lucide.createIcons();
-            window.showView('units');
-            setTimeout(initAccordion, 10);  
-        }
-
-        window.initAccordion = function() {
-            document.querySelectorAll('.unit-header').forEach(header => {
-                const content = document.getElementById(header.dataset.target);
-                if (content) {
-                    content.style.maxHeight = content.scrollHeight + "px";
-                    header.classList.add('active'); 
-
-                    header.removeEventListener('click', handleAccordionClick);
-                    header.addEventListener('click', handleAccordionClick);
-                }
-            });
-        }
-        
-        function handleAccordionClick(event) {
-            const header = event.currentTarget;
-            const content = document.getElementById(header.dataset.target);
-            
-            header.classList.toggle('active');
-            if (header.classList.contains('active')) {
-                content.style.maxHeight = content.scrollHeight + "px";
-            } else {
-                content.style.maxHeight = '0';
-            }
-        }
-
-        // Final initialization calls
-        lucide.createIcons();
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
-        });
-
-    </script>
-</body>
-</html>
+                { unit: 'UNIT 5: CONSUMER\'S EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer\'s Equilibrium', '3. Demand', '4.
