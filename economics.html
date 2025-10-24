@@ -25,6 +25,8 @@
         }
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script> 
+    
     <style>
         .book-card {
             transition: all 0.3s ease;
@@ -86,7 +88,7 @@
                 <h1 class="text-2xl font-extrabold text-cbse-blue">CBSE Class 11 Economics Portal</h1>
             </div>
             <nav class="flex space-x-2 sm:space-x-4">
-                <button id="logout-nav-btn" class="nav-link hidden">🚪 Logout</button>
+                <span id="user-display" class="text-gray-600 font-medium hidden"></span> <button id="logout-nav-btn" class="nav-link hidden">🚪 Logout</button>
             </nav>
         </div>
     </header>
@@ -164,14 +166,16 @@
         </div>
     </footer>
 
-    <!-- Firebase Compatibility SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 
     <script>
-        // YOUR FIREBASE CONFIGURATION (Using the values provided in the original prompt)
+        /* =====================================================================
+        |  CONFIGURATION (REQUIRED!)                                        |
+        ===================================================================== */
+        // YOUR FIREBASE CONFIGURATION (Already present in your code)
         const firebaseConfig = {
             apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
             authDomain: "quiz-signon.firebaseapp.com",
@@ -181,301 +185,382 @@
             appId: "1:863414222321:web:819f5564825308bcd9d850",
             measurementId: "G-4EFDM0CRYY"
         };
+        
+        // 🚨 IMPORTANT: REPLACE 'rzp_test_YourPublicKeyID' with your actual Razorpay Public Key ID.
+        const RAZORPAY_KEY_ID = 'rzp_test_YourPublicKeyID'; 
+
+        // 🚨 IMPORTANT: REPLACE with your secure backend API endpoint for creating the Razorpay Order.
+        const API_URL_CREATE_ORDER = '/api/create-razorpay-order'; 
+
 
         // Initialize Firebase App, Auth, and Firestore using the compatibility layer
-        try {
-            const app = firebase.initializeApp(firebaseConfig);
-            const auth = app.auth(); 
-            const db = app.firestore(); 
-            
-            let isUserLoggedIn = false; 
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); 
+        const db = app.firestore(); 
+        
+        let isUserLoggedIn = false; 
 
-            // --- DOM Elements ---
-            const authModal = document.getElementById('auth-modal');
-            const logoutNavBtn = document.getElementById('logout-nav-btn');
-            const errorMessage = document.getElementById('error-message');
-            const unitsList = document.getElementById('units-list');
-            const unitsViewTitle = document.getElementById('units-view-title');
-            const backToBooksBtn = document.getElementById('back-to-books-btn');
-            const closeModalBtn = document.getElementById('close-modal-btn');
-            const headerHomeBtn = document.getElementById('header-home-btn');
-            const googleSignInBtn = document.getElementById('google-sign-in-btn'); 
+        // --- DOM Elements ---
+        const authModal = document.getElementById('auth-modal');
+        const logoutNavBtn = document.getElementById('logout-nav-btn');
+        const errorMessage = document.getElementById('error-message');
+        const unitsList = document.getElementById('units-list');
+        const unitsViewTitle = document.getElementById('units-view-title');
+        const backToBooksBtn = document.getElementById('back-to-books-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const headerHomeBtn = document.getElementById('header-home-btn');
+        const googleSignInBtn = document.getElementById('google-sign-in-btn');
+        const userDisplay = document.getElementById('user-display'); 
 
-            // --- AUTH/MODAL FUNCTIONS ---
+        // --- AUTH/MODAL FUNCTIONS ---
 
-            function showAuthModal() {
-                authModal.classList.remove('hidden');
-                errorMessage.textContent = '';
+        function showAuthModal() {
+            authModal.classList.remove('hidden');
+            errorMessage.textContent = '';
+        }
+
+        function hideAuthModal() {
+            authModal.classList.add('hidden');
+        }
+        
+        function updateAuthUI(user) {
+            userDisplay.classList.add('hidden');
+            if (user) {
+                isUserLoggedIn = true;
+                logoutNavBtn.classList.remove('hidden');
+                if (user.email) {
+                    userDisplay.textContent = `Welcome, ${user.email.split('@')[0]}`;
+                    userDisplay.classList.remove('hidden');
+                }
+            } else {
+                isUserLoggedIn = false;
+                logoutNavBtn.classList.add('hidden');
             }
+        }
 
-            function hideAuthModal() {
-                authModal.classList.add('hidden');
-            }
-            
-            function updateAuthUI(user) {
-                if (user) {
-                    isUserLoggedIn = true;
-                    // Show user info on logout button
-                    logoutNavBtn.textContent = `🚪 Logout (${user.displayName || user.email || 'User'})`;
-                    logoutNavBtn.classList.remove('hidden');
-                    hideAuthModal(); // Hide modal on successful sign-in
+        // --- GOOGLE SIGN-IN LOGIC ---
+
+        googleSignInBtn.addEventListener('click', async () => {
+            errorMessage.textContent = 'Signing in with Google...';
+            googleSignInBtn.disabled = true;
+
+            const provider = new firebase.auth.GoogleAuthProvider();
+
+            try {
+                await auth.signInWithPopup(provider);
+                hideAuthModal(); 
+            } catch (error) {
+                console.error("Error signing in with Google:", error);
+                
+                let displayMessage = 'Sign-in failed. Check the console for details.';
+                if (error.code === 'auth/popup-closed-by-user') {
+                    displayMessage = 'Sign-in window closed by user.';
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    displayMessage = 'Sign-in was blocked by a previous attempt.';
                 } else {
-                    isUserLoggedIn = false;
-                    logoutNavBtn.classList.add('hidden');
+                    displayMessage = 'Google Sign-in failed: ' + error.message;
                 }
+
+                errorMessage.textContent = displayMessage;
+            } finally {
+                googleSignInBtn.disabled = false;
             }
-
-            // --- GOOGLE SIGN-IN LOGIC ---
-
-            googleSignInBtn.addEventListener('click', async () => {
-                errorMessage.textContent = 'Initiating Sign-in... Please check for a pop-up window.';
-                googleSignInBtn.disabled = true;
-
-                const provider = new firebase.auth.GoogleAuthProvider();
-
-                try {
-                    // Use signInWithPopup for browser compatibility
-                    await auth.signInWithPopup(provider);
-                    // The auth.onAuthStateChanged listener handles UI updates and hiding the modal
-                    
-                } catch (error) {
-                    console.error("Error signing in with Google:", error);
-                    
-                    let displayMessage = 'Sign-in failed. Check the console for details.';
-                    if (error.code === 'auth/popup-closed-by-user') {
-                        displayMessage = 'Sign-in window closed by user.';
-                    } else if (error.code === 'auth/cancelled-popup-request') {
-                        displayMessage = 'Sign-in was blocked by a previous attempt.';
-                    } else if (error.code === 'auth/popup-blocked') {
-                        displayMessage = 'Pop-up window was blocked by your browser. Allow pop-ups for this site.';
-                    } else {
-                        // Display the main error message
-                        displayMessage = `Sign-in failed: ${error.message}`;
-                    }
-
-                    errorMessage.textContent = displayMessage;
-                } finally {
-                    googleSignInBtn.disabled = false;
-                }
-            });
+        });
 
 
-            // --- LOGOUT & AUTH STATE ---
+        // --- LOGOUT & AUTH STATE ---
 
-            closeModalBtn.addEventListener('click', hideAuthModal);
+        closeModalBtn.addEventListener('click', hideAuthModal);
 
-            logoutNavBtn.addEventListener('click', async () => {
-                try {
-                    await auth.signOut();
-                    alert("You have been logged out.");
-                } catch (error) {
-                    console.error("Error signing out:", error);
-                }
-            });
-
-            // This listener updates the UI on load and whenever auth state changes.
-            auth.onAuthStateChanged((user) => {
-                updateAuthUI(user);
-            });
-
-            // --- UTILITY: Clean chapter name for a URL/filename ---
-            function cleanChapterName(name) {
-                // 1. Remove leading numbers (like '3. ')
-                // 2. Convert to lowercase
-                // 3. Replace any non-alphanumeric characters (including spaces) with a hyphen
-                return name
-                    .replace(/^\d+\.\s*/, '') 
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-'); 
+        logoutNavBtn.addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                alert("You have been logged out.");
+            } catch (error) {
+                console.error("Error signing out:", error);
             }
+        });
 
-            // --- QUIZ DATA & LOGIC ---
+        auth.onAuthStateChanged((user) => {
+            updateAuthUI(user);
+        });
+
+        // --- QUIZ DATA & CURRICULUM UI LOGIC (UNCHANGED) ---
+        
+        const bookData = {
+            'Stats': [
+                { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
+                { unit: 'UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA', chapters: ['2. Collection of Data', '3. Organisation of Data', '4. Presentation of Data'] },
+                { unit: 'UNIT 3: STATISTICAL TOOLS AND INTERPRETATION', chapters: ['5. Measures of Central Tendency', '6. Measures of Dispersion', '7. Correlation', '8. Index Numbers', '9. Use of Statistical Tools (Project)'] }
+            ],
+            'Micro': [
+                { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
+                { unit: 'UNIT 5: CONSUMER EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
+                { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
+                { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
+                { unit: 'REVISION SECTION', chapters: ['Important Questions', 'Value Based Questions', 'Case Based Questions (CBQs)', 'Last Minute Revision'] }
+            ],
+            'IED': [
+                { unit: 'UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)', chapters: ['1. Indian Economy on the Eve of Independence', '2. Indian Economy (1950–1990)', '3. Liberalisation, Privatisation and Globalisation: An Appraisal'] },
+                { unit: 'UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY', chapters: ['4. Human Capital Formation in India', '5. Rural Development', '6. Employment: Growth, Informalisation and Other Issues', '7. Infrastructure', '8. Environment and Sustainable Development'] },
+                { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
+            ]
+        };
+
+        /* =====================================================================
+        |  START QUIZ FUNCTION (Updated to include Payment)                |
+        ===================================================================== */
+        
+        async function startQuiz(chapterName) {
+            const user = auth.currentUser;
+            const cleanedChapterName = chapterName.trim();
             
-            const bookData = {
-                'Stats': [
-                    { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
-                    { unit: 'UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA', chapters: ['2. Collection of Data', '3. Organisation of Data', '4. Presentation of Data'] },
-                    { unit: 'UNIT 3: STATISTICAL TOOLS AND INTERPRETATION', chapters: ['5. Measures of Central Tendency', '6. Measures of Dispersion', '7. Correlation', '8. Index Numbers', '9. Use of Statistical Tools (Project)'] }
-                ],
-                'Micro': [
-                    { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
-                    { unit: 'UNIT 5: CONSUMER EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
-                    { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
-                    { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
-                    { unit: 'REVISION SECTION', chapters: ['Important Questions', 'Value Based Questions', 'Case Based Questions (CBQs)', 'Last Minute Revision'] }
-                ],
-                'IED': [
-                    { unit: 'UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)', chapters: ['1. Indian Economy on the Eve of Independence', '2. Indian Economy (1950–1990)', '3. Liberalisation, Privatisation and Globalisation: An Appraisal'] },
-                    { unit: 'UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY', chapters: ['4. Human Capital Formation in India', '5. Rural Development', '6. Employment: Growth, Informalisation and Other Issues', '7. Infrastructure', '8. Environment and Sustainable Development'] },
-                    { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
-                ]
+            // 1. AUTH CHECK
+            if (!user || !user.email) {
+                showAuthModal();
+                return; 
+            }
+            
+            // 2. LOG THE ATTEMPT 
+            db.collection("quiz_attempts").add({
+                userId: user.uid,
+                email: user.email, 
+                chapter: cleanedChapterName,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+                action: 'Quiz Attempted (Pre-Payment)'
+            })
+            .then(() => console.log("Quiz attempt logged successfully."))
+            .catch((error) => console.error("Error logging quiz attempt: ", error));
+            
+            // 3. INITIATE RAZORPAY PAYMENT
+            try {
+                await initiateRazorpayPayment(cleanedChapterName, user.uid, user.email);
+            } catch (error) {
+                console.error('Payment initiation failed:', error);
+                errorMessage.textContent = 'Payment could not start. Error: ' + error.message;
+            }
+        }
+        
+        /* =====================================================================
+        |  RAZORPAY IMPLEMENTATION FUNCTIONS (NEW)                         |
+        ===================================================================== */
+
+        /**
+         * Performs the final, confirmed redirection to the quiz.
+         * @param {string} chapterName - The cleaned chapter name.
+         */
+        function redirectAfterPayment(chapterName) {
+            console.log(`[Navigation] Payment confirmed. Redirecting for: ${chapterName}`);
+
+            // --- THE THREE WORKING QUIZ ADDRESSES ---
+            
+            if (chapterName.includes('4. Elasticity of Demand')) {  
+                window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
+                return;
+            }
+
+            if (chapterName.includes("2. Consumer Equilibrium")) {  
+                window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
+                return;
+            }
+
+            if (chapterName.includes('3. Demand')) {  
+                window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
+                return;
+            }
+            
+            // Default alert for all other quizzes
+            alert(`Payment Confirmed. Quiz not yet implemented for: ${chapterName}.`);
+        }
+        
+        /**
+         * Handles the async order creation and payment checkout process.
+         */
+        async function initiateRazorpayPayment(cleanedChapterName, userId, email) {
+            if (typeof Razorpay === 'undefined') {
+                 throw new Error("Razorpay script failed to load.");
+            }
+            
+            // 1. CALL BACKEND TO CREATE ORDER
+            const response = await fetch(API_URL_CREATE_ORDER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // NOTE: The amount in paise should be validated server-side. Using 500 paise (₹5.00 INR) here.
+                body: JSON.stringify({ 
+                    chapter_name: cleanedChapterName,
+                    user_id: userId,
+                    amount_paise: 500, 
+                }),
+            });
+
+            if (!response.ok) {
+                const errorDetail = await response.text();
+                throw new Error(`Server failed to create Razorpay Order. Details: ${errorDetail}`);
+            }
+
+            const orderData = await response.json();
+            const { order_id, amount, currency } = orderData; 
+            
+            if (!order_id || !amount || !currency) {
+                throw new Error('Invalid order data received from server.');
+            }
+            
+            // 2. DEFINE SUCCESS HANDLER
+            const successHandler = (response) => {
+                console.log('Payment Successful:', response.razorpay_payment_id);
+                // Log successful payment to Firestore
+                db.collection("payments").add({
+                    userId: userId,
+                    chapter: cleanedChapterName,
+                    paymentId: response.razorpay_payment_id,
+                    orderId: order_id,
+                    amount: amount,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(e => console.error("Failed to log payment success:", e));
+                
+                redirectAfterPayment(cleanedChapterName);
             };
 
-            function startQuiz(chapterName) {
-                const user = auth.currentUser;
-                
-                // --- CORE LOGIC: CHECK AUTH STATUS ---
-                if (!user) {
-                    showAuthModal();
-                    // STOP EXECUTION: User must sign in first.
-                    return; 
+            // 3. DEFINE OPTIONS AND OPEN CHECKOUT
+            const options = {
+                key: RAZORPAY_KEY_ID, 
+                amount: amount, 
+                currency: currency, 
+                order_id: order_id, 
+                name: 'Quiz Access',
+                description: `Quiz: ${cleanedChapterName}`,
+                handler: successHandler, 
+                prefill: {
+                    name: email.split('@')[0], 
+                    email: email, 
+                },
+                notes: {
+                    chapter_name: cleanedChapterName,
+                    user_id: userId
+                },
+                modal: {
+                    ondismiss: () => {
+                        console.log('Payment window closed by user.');
+                    }
                 }
-                
-                // If user exists, proceed with logging and navigation
-                const cleanedChapterName = chapterName.trim();
-                
-                // --- LOG THE ATTEMPT TO FIRESTORE (Quiz Start) ---
-                db.collection("quiz_attempts").add({
-                    userId: user.uid,
-                    email: user.email || 'N/A', 
-                    chapter: cleanedChapterName,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
-                    action: 'Quiz Attempted'
-                })
-                .then(() => {
-                    // SIMULATED PREMIUM/PAYMENT CHECK
-                    const isPremium = true; 
+            };
 
-                    if (isPremium) {
-                        const filename = cleanChapterName(cleanedChapterName);
-                        console.log(`ACCESS GRANTED. Attempting navigation to: quizzes/${filename}.html`);
-                        
-                        // --- RE-ENABLING NAVIGATION ---
-                        window.location.href = `quizzes/${filename}.html`;
-                        
-                    } else {
-                        // This block would show a payment modal in a real app
-                        alert(`ACCESS DENIED for ${cleanedChapterName}. Please complete payment or subscription! (You are logged in, but not paid.)`);
-                    }
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
 
-                })
-                .catch((error) => {
-                    console.error("Error logging quiz attempt (Check Firestore Rules!): ", error);
-                    alert(`Login Successful, but failed to log attempt: ${error.message}`);
-                });
-            }
+        // --- UI & EVENT BINDING FUNCTIONS (UNCHANGED) ---
+
+        function showView(viewId) {
+            document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewId + '-view').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function showUnits(bookKey, title, color) {
+            const units = bookData[bookKey];
             
-            function showView(viewId) {
-                document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
-                    view.classList.add('hidden');
-                });
-                document.getElementById(viewId + '-view').classList.remove('hidden');
-                window.scrollTo(0, 0);
-            }
+            unitsViewTitle.textContent = title;
+            unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
 
-            function showUnits(bookKey, title, color) {
-                const units = bookData[bookKey];
+            let html = '';
+            units.forEach((unitItem, index) => {
+                const unitId = `${bookKey}-unit-${index}`;
                 
-                unitsViewTitle.textContent = title;
-                unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
+                let chaptersHtml = unitItem.chapters.map((chapter) => `
+                    <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
+                        <span class="text-gray-700 font-medium">${chapter}</span>
+                        <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">Quiz</button>
+                    </div>
+                `).join('');
 
-                let html = '';
-                units.forEach((unitItem, index) => {
-                    const unitId = `${bookKey}-unit-${index}`;
-                    
-                    let chaptersHtml = unitItem.chapters.map((chapter) => `
-                        <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
-                            <span class="text-gray-700 font-medium">${chapter}</span>
-                            <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">Quiz</button>
+                html += `
+                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                        <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="${unitId}">
+                            <span>${unitItem.unit}</span>
+                            <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
                         </div>
-                    `).join('');
-
-                    html += `
-                        <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
-                            <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="${unitId}">
-                                <span>${unitItem.unit}</span>
-                                <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
-                            </div>
-                            <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                                ${chaptersHtml}
-                            </div>
+                        <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            ${chaptersHtml}
                         </div>
-                    `;
-                });
-
-                unitsList.innerHTML = html;
-                lucide.createIcons(); 
-                showView('units');
-                
-                attachEventListeners(); 
-                setTimeout(initAccordion, 10); 
-            }
-
-            function initAccordion() {
-                document.querySelectorAll('.unit-header').forEach(header => {
-                    const content = document.getElementById(header.dataset.target);
-                    if (content) {
-                        if (header.classList.contains('active')) {
-                            content.style.maxHeight = content.scrollHeight + "px";
-                        }
-                        
-                        header.removeEventListener('click', handleAccordionClick);
-                        header.addEventListener('click', handleAccordionClick);
-                    }
-                });
-            }
-            
-            function handleAccordionClick(event) {
-                const header = event.currentTarget;
-                const content = document.getElementById(header.dataset.target);
-                
-                header.classList.toggle('active');
-                if (header.classList.contains('active')) {
-                    content.style.maxHeight = content.scrollHeight + "px";
-                } else {
-                    content.style.maxHeight = '0';
-                }
-            }
-
-            // --- ATTACH EVENT LISTENERS (Consolidated) ---
-
-            function attachEventListeners() {
-                document.querySelectorAll('.quiz-start-btn').forEach(button => {
-                    button.removeEventListener('click', handleQuizButtonClick); 
-                    button.addEventListener('click', handleQuizButtonClick);
-                });
-                
-                document.querySelectorAll('.book-select-btn').forEach(card => {
-                    if (!card.hasAttribute('data-listener-attached')) {
-                        card.addEventListener('click', handleBookSelectClick);
-                        card.setAttribute('data-listener-attached', 'true');
-                    }
-                });
-            }
-
-            // --- Event Handlers that use Data Attributes ---
-
-            function handleQuizButtonClick(event) {
-                const chapterName = event.currentTarget.dataset.chapter;
-                // This is the gate-check point!
-                startQuiz(chapterName);
-            }
-
-            function handleBookSelectClick(event) {
-                const card = event.currentTarget;
-                const book = card.dataset.book;
-                const title = card.dataset.title;
-                const color = card.dataset.color;
-                showUnits(book, title, color);
-            }
-            
-            // --- Initialization on Document Load ---
-            document.addEventListener('DOMContentLoaded', () => {
-                lucide.createIcons();
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
-                });
-
-                attachEventListeners();
-                
-                headerHomeBtn.addEventListener('click', () => showView('book-select'));
-                backToBooksBtn.addEventListener('click', () => showView('book-select'));
+                    </div>
+                `;
             });
 
-        } catch (initError) {
-            console.error("Firebase Initialization Failed:", initError);
-            alert("Application startup failed. Check your Firebase configuration.");
+            unitsList.innerHTML = html;
+            lucide.createIcons(); 
+            showView('units');
+            
+            attachEventListeners(); 
+            setTimeout(initAccordion, 10); 
         }
+
+        function initAccordion() {
+            document.querySelectorAll('.unit-header').forEach(header => {
+                const content = document.getElementById(header.dataset.target);
+                if (content) {
+                    if (header.classList.contains('active')) {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                    
+                    header.removeEventListener('click', handleAccordionClick);
+                    header.addEventListener('click', handleAccordionClick);
+                }
+            });
+        }
+        
+        function handleAccordionClick(event) {
+            const header = event.currentTarget;
+            const content = document.getElementById(header.dataset.target);
+            
+            header.classList.toggle('active');
+            if (header.classList.contains('active')) {
+                content.style.maxHeight = content.scrollHeight + "px";
+            } else {
+                content.style.maxHeight = '0';
+            }
+        }
+
+        function attachEventListeners() {
+            document.querySelectorAll('.quiz-start-btn').forEach(button => {
+                button.removeEventListener('click', handleQuizButtonClick); 
+                button.addEventListener('click', handleQuizButtonClick);
+            });
+            
+            document.querySelectorAll('.book-select-btn').forEach(card => {
+                if (!card.hasAttribute('data-listener-attached')) {
+                    card.addEventListener('click', handleBookSelectClick);
+                    card.setAttribute('data-listener-attached', 'true');
+                }
+            });
+        }
+
+        function handleQuizButtonClick(event) {
+            const chapterName = event.currentTarget.dataset.chapter;
+            startQuiz(chapterName);
+        }
+
+        function handleBookSelectClick(event) {
+            const card = event.currentTarget;
+            const book = card.dataset.book;
+            const title = card.dataset.title;
+            const color = card.dataset.color;
+            showUnits(book, title, color);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
+            });
+
+            attachEventListeners();
+            
+            headerHomeBtn.addEventListener('click', () => showView('book-select'));
+            backToBooksBtn.addEventListener('click', () => showView('book-select'));
+        });
         
     </script>
 </body>
