@@ -24,7 +24,7 @@
             }
         }
     </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@latest"></script> 
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script> 
     
     <style>
@@ -88,7 +88,8 @@
                 <h1 class="text-2xl font-extrabold text-cbse-blue">CBSE Class 11 Economics Portal</h1>
             </div>
             <nav class="flex space-x-2 sm:space-x-4">
-                <span id="user-display" class="text-gray-600 font-medium hidden"></span> <button id="logout-nav-btn" class="nav-link hidden">🚪 Logout</button>
+                <span id="user-display" class="text-gray-600 font-medium hidden"></span>
+                <button id="logout-nav-btn" class="nav-link hidden">🚪 Logout</button>
             </nav>
         </div>
     </header>
@@ -175,7 +176,6 @@
         /* =====================================================================
         |  CONFIGURATION (REQUIRED!)                                        |
         ===================================================================== */
-        // YOUR FIREBASE CONFIGURATION (Already present in your code)
         const firebaseConfig = {
             apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
             authDomain: "quiz-signon.firebaseapp.com",
@@ -225,13 +225,11 @@
         
         function updateAuthUI(user) {
             userDisplay.classList.add('hidden');
-            if (user) {
+            if (user && user.email) {
                 isUserLoggedIn = true;
                 logoutNavBtn.classList.remove('hidden');
-                if (user.email) {
-                    userDisplay.textContent = `Welcome, ${user.email.split('@')[0]}`;
-                    userDisplay.classList.remove('hidden');
-                }
+                userDisplay.textContent = `Welcome, ${user.email.split('@')[0]}`;
+                userDisplay.classList.remove('hidden');
             } else {
                 isUserLoggedIn = false;
                 logoutNavBtn.classList.add('hidden');
@@ -285,7 +283,7 @@
             updateAuthUI(user);
         });
 
-        // --- QUIZ DATA & CURRICULUM UI LOGIC (UNCHANGED) ---
+        // --- QUIZ DATA & CURRICULUM UI LOGIC ---
         
         const bookData = {
             'Stats': [
@@ -308,7 +306,7 @@
         };
 
         /* =====================================================================
-        |  START QUIZ FUNCTION (Updated to include Payment)                |
+        |  START QUIZ FUNCTION (Payment Gate)                              |
         ===================================================================== */
         
         async function startQuiz(chapterName) {
@@ -334,21 +332,24 @@
             
             // 3. INITIATE RAZORPAY PAYMENT
             try {
+                // If payment is successful, it calls redirectAfterPayment internally
                 await initiateRazorpayPayment(cleanedChapterName, user.uid, user.email);
             } catch (error) {
                 console.error('Payment initiation failed:', error);
-                errorMessage.textContent = 'Payment could not start. Error: ' + error.message;
+                // Display error message in the main view
+                const errorDisplay = document.getElementById('error-message');
+                if (errorDisplay) {
+                    errorDisplay.textContent = 'Payment failed: ' + error.message;
+                } else {
+                    alert('Payment could not start: ' + error.message);
+                }
             }
         }
         
         /* =====================================================================
-        |  RAZORPAY IMPLEMENTATION FUNCTIONS (NEW)                         |
+        |  RAZORPAY IMPLEMENTATION FUNCTIONS                               |
         ===================================================================== */
 
-        /**
-         * Performs the final, confirmed redirection to the quiz.
-         * @param {string} chapterName - The cleaned chapter name.
-         */
         function redirectAfterPayment(chapterName) {
             console.log(`[Navigation] Payment confirmed. Redirecting for: ${chapterName}`);
 
@@ -373,23 +374,20 @@
             alert(`Payment Confirmed. Quiz not yet implemented for: ${chapterName}.`);
         }
         
-        /**
-         * Handles the async order creation and payment checkout process.
-         */
         async function initiateRazorpayPayment(cleanedChapterName, userId, email) {
             if (typeof Razorpay === 'undefined') {
-                 throw new Error("Razorpay script failed to load.");
+                 throw new Error("Razorpay script failed to load. Check network or script tag.");
             }
             
-            // 1. CALL BACKEND TO CREATE ORDER
+            // 1. CALL BACKEND TO CREATE ORDER (Mocking API call here for front-end only code)
+            // *** YOU MUST HAVE A BACKEND ENDPOINT FOR THIS IN PRODUCTION ***
             const response = await fetch(API_URL_CREATE_ORDER, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // NOTE: The amount in paise should be validated server-side. Using 500 paise (₹5.00 INR) here.
                 body: JSON.stringify({ 
                     chapter_name: cleanedChapterName,
                     user_id: userId,
-                    amount_paise: 500, 
+                    amount_paise: 500, // ₹5.00 INR
                 }),
             });
 
@@ -407,8 +405,6 @@
             
             // 2. DEFINE SUCCESS HANDLER
             const successHandler = (response) => {
-                console.log('Payment Successful:', response.razorpay_payment_id);
-                // Log successful payment to Firestore
                 db.collection("payments").add({
                     userId: userId,
                     chapter: cleanedChapterName,
@@ -449,8 +445,10 @@
             rzp.open();
         }
 
-        // --- UI & EVENT BINDING FUNCTIONS (UNCHANGED) ---
-
+        /* =====================================================================
+        |  UI & EVENT BINDING FUNCTIONS (FIXED)                            |
+        ===================================================================== */
+        
         function showView(viewId) {
             document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
                 view.classList.add('hidden');
@@ -490,11 +488,16 @@
             });
 
             unitsList.innerHTML = html;
-            lucide.createIcons(); 
+            // CRITICAL FIX: Ensure icons are created after dynamic HTML is added
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons(); 
+            }
+
             showView('units');
             
-            attachEventListeners(); 
-            setTimeout(initAccordion, 10); 
+            // Re-attach event listeners to new buttons
+            attachEventListeners(true); 
+            initAccordion(); 
         }
 
         function initAccordion() {
@@ -502,6 +505,7 @@
                 const content = document.getElementById(header.dataset.target);
                 if (content) {
                     if (header.classList.contains('active')) {
+                        // Correctly set initial height for open content
                         content.style.maxHeight = content.scrollHeight + "px";
                     }
                     
@@ -517,20 +521,30 @@
             
             header.classList.toggle('active');
             if (header.classList.contains('active')) {
+                // Ensure scrollHeight is calculated *after* content is visible if necessary, but this generally works
                 content.style.maxHeight = content.scrollHeight + "px";
             } else {
                 content.style.maxHeight = '0';
             }
         }
 
-        function attachEventListeners() {
-            document.querySelectorAll('.quiz-start-btn').forEach(button => {
-                button.removeEventListener('click', handleQuizButtonClick); 
-                button.addEventListener('click', handleQuizButtonClick);
-            });
+        /**
+         * Attaches event listeners. 
+         * @param {boolean} reattachDynamic - True to re-attach quiz and book select listeners.
+         */
+        function attachEventListeners(reattachDynamic = false) {
+            if (reattachDynamic) {
+                // Attach quiz listeners to dynamically generated buttons
+                document.querySelectorAll('.quiz-start-btn').forEach(button => {
+                    button.removeEventListener('click', handleQuizButtonClick); 
+                    button.addEventListener('click', handleQuizButtonClick);
+                });
+            }
             
+            // Attach book select listeners (should only happen once initially, but safe to check)
             document.querySelectorAll('.book-select-btn').forEach(card => {
-                if (!card.hasAttribute('data-listener-attached')) {
+                if (!card.hasAttribute('data-listener-attached') || reattachDynamic) {
+                    card.removeEventListener('click', handleBookSelectClick);
                     card.addEventListener('click', handleBookSelectClick);
                     card.setAttribute('data-listener-attached', 'true');
                 }
@@ -550,13 +564,19 @@
             showUnits(book, title, color);
         }
         
+        // --- Initialization on Document Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+            // CRITICAL FIX: Call lucide.createIcons here for static elements
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
             });
 
-            attachEventListeners();
+            // Initial attachment of listeners
+            attachEventListeners(true); 
             
             headerHomeBtn.addEventListener('click', () => showView('book-select'));
             backToBooksBtn.addEventListener('click', () => showView('book-select'));
