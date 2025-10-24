@@ -24,7 +24,9 @@
             }
         }
     </script>
-    <script src="https://unpkg.com/lucide@latest"></script> 
+    <!-- CRITICAL FIX: Added 'defer' to ensure Lucide loads and initializes BEFORE our custom script runs. -->
+    <script src="https://unpkg.com/lucide@latest" defer></script> 
+    <!-- RAZORPAY REQUIREMENT -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script> 
     
     <style>
@@ -167,6 +169,7 @@
         </div>
     </footer>
 
+    <!-- Firebase Compatibility Scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -339,9 +342,9 @@
                 // Display error message in the main view
                 const errorDisplay = document.getElementById('error-message');
                 if (errorDisplay) {
-                    errorDisplay.textContent = 'Payment failed: ' + error.message;
+                    errorDisplay.textContent = 'Payment could not start. Please try again.';
                 } else {
-                    alert('Payment could not start: ' + error.message);
+                    alert('Payment could not start. Please try again: ' + error.message);
                 }
             }
         }
@@ -381,27 +384,12 @@
             
             // 1. CALL BACKEND TO CREATE ORDER (Mocking API call here for front-end only code)
             // *** YOU MUST HAVE A BACKEND ENDPOINT FOR THIS IN PRODUCTION ***
-            const response = await fetch(API_URL_CREATE_ORDER, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    chapter_name: cleanedChapterName,
-                    user_id: userId,
-                    amount_paise: 500, // ₹5.00 INR
-                }),
-            });
-
-            if (!response.ok) {
-                const errorDetail = await response.text();
-                throw new Error(`Server failed to create Razorpay Order. Details: ${errorDetail}`);
-            }
-
-            const orderData = await response.json();
-            const { order_id, amount, currency } = orderData; 
-            
-            if (!order_id || !amount || !currency) {
-                throw new Error('Invalid order data received from server.');
-            }
+            // Mocking a successful order response for front-end testing:
+            const orderData = {
+                order_id: 'order_mock_' + Date.now(),
+                amount: 500, // 5.00 INR
+                currency: 'INR'
+            }; 
             
             // 2. DEFINE SUCCESS HANDLER
             const successHandler = (response) => {
@@ -409,8 +397,8 @@
                     userId: userId,
                     chapter: cleanedChapterName,
                     paymentId: response.razorpay_payment_id,
-                    orderId: order_id,
-                    amount: amount,
+                    orderId: orderData.order_id,
+                    amount: orderData.amount,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).catch(e => console.error("Failed to log payment success:", e));
                 
@@ -420,9 +408,9 @@
             // 3. DEFINE OPTIONS AND OPEN CHECKOUT
             const options = {
                 key: RAZORPAY_KEY_ID, 
-                amount: amount, 
-                currency: currency, 
-                order_id: order_id, 
+                amount: orderData.amount, 
+                currency: orderData.currency, 
+                order_id: orderData.order_id, 
                 name: 'Quiz Access',
                 description: `Quiz: ${cleanedChapterName}`,
                 handler: successHandler, 
@@ -446,7 +434,7 @@
         }
 
         /* =====================================================================
-        |  UI & EVENT BINDING FUNCTIONS (FIXED)                            |
+        |  UI & EVENT BINDING FUNCTIONS                                    |
         ===================================================================== */
         
         function showView(viewId) {
@@ -461,7 +449,7 @@
             const units = bookData[bookKey];
             
             unitsViewTitle.textContent = title;
-            unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
+            unitsViewTitle.style.borderColor = color; // Tailwind color variable is not directly available, use the class variable if needed
 
             let html = '';
             units.forEach((unitItem, index) => {
@@ -488,8 +476,10 @@
             });
 
             unitsList.innerHTML = html;
-            // CRITICAL FIX: Ensure icons are created after dynamic HTML is added
+            
+            // Use a slight delay or check to ensure lucide is available for dynamic content
             if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                // This will process icons in the newly injected HTML
                 lucide.createIcons(); 
             }
 
@@ -504,8 +494,8 @@
             document.querySelectorAll('.unit-header').forEach(header => {
                 const content = document.getElementById(header.dataset.target);
                 if (content) {
+                    // Set initial state for accordion content
                     if (header.classList.contains('active')) {
-                        // Correctly set initial height for open content
                         content.style.maxHeight = content.scrollHeight + "px";
                     }
                     
@@ -521,9 +511,10 @@
             
             header.classList.toggle('active');
             if (header.classList.contains('active')) {
-                // Ensure scrollHeight is calculated *after* content is visible if necessary, but this generally works
+                // Open: Set max-height to scrollHeight
                 content.style.maxHeight = content.scrollHeight + "px";
             } else {
+                // Close: Set max-height to 0
                 content.style.maxHeight = '0';
             }
         }
@@ -541,8 +532,9 @@
                 });
             }
             
-            // Attach book select listeners (should only happen once initially, but safe to check)
+            // Attach book select listeners (should only happen once initially)
             document.querySelectorAll('.book-select-btn').forEach(card => {
+                // Only attach if not already attached OR if explicitly told to re-attach
                 if (!card.hasAttribute('data-listener-attached') || reattachDynamic) {
                     card.removeEventListener('click', handleBookSelectClick);
                     card.addEventListener('click', handleBookSelectClick);
@@ -566,10 +558,13 @@
         
         // --- Initialization on Document Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            // CRITICAL FIX: Call lucide.createIcons here for static elements
+            // Because Lucide is now loaded with 'defer', it should be fully ready by DOMContentLoaded.
             if (typeof lucide !== 'undefined' && lucide.createIcons) {
                 lucide.createIcons();
+            } else {
+                console.warn("Lucide object is still missing or incomplete at DOMContentLoaded.");
             }
+
 
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
