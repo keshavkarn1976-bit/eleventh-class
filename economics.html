@@ -33,7 +33,7 @@
 <div id="app-container" class="auth-container p-4">
     
     <div id="auth-screen" class="card p-8 rounded-xl w-full max-w-md text-center">
-        <h1 class="text-3xl font-bold mb-6 text-white">Welcome Back</h1>
+        <h1 class="text-3xl font-bold mb-6 text-white">Welcome to Economy Simulator</h1>
         <p class="text-gray-400 mb-8">Sign in to start your economy simulation and secure your account.</p>
         <button id="google-signin-btn" class="btn-primary py-3 px-6 rounded-xl font-semibold w-full flex items-center justify-center space-x-3">
             <i class="fab fa-google text-lg"></i>
@@ -97,20 +97,38 @@
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
     // =========================================================================
-    // !!! IMPORTANT: REPLACE THESE PLACEHOLDERS WITH YOUR ACTUAL SUPABASE KEYS !!!
+    // !!! CRITICAL: FIREBASE CONFIGURATION (Fixes "Firebase config not available" error) !!!
+    // REPLACE these with your actual Firebase project settings.
     // =========================================================================
-    const SUPABASE_URL = 'https://YOUR-SUPABASE-PROJECT-ID.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'YOUR-SUPABASE-ANON-PUBLIC-KEY'; 
+    const FIREBASE_CONFIG = {
+        apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ", // <-- REPLACE THIS
+        authDomain: "quiz-signon.firebaseapp.com", // <-- REPLACE THIS
+        projectId: "quiz-signon", // <-- REPLACE THIS
+        storageBucket: "quiz-signon.firebasestorage.app",
+        messagingSenderId: "863414222321",
+        appId: "1:863414222321:web:819f5564825308bcd9d850"
+    };
+    
+    // =========================================================================
+    // !!! IMPORTANT: SUPABASE CONFIGURATION !!!
+    // REPLACE these with your actual Supabase project settings.
+    // =========================================================================
+    const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co'; 
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY'; 
     // =========================================================================
 
-    // --- GLOBAL VARIABLES (Provided by Canvas Environment) ---
+    // --- GLOBAL VARIABLES (Now using hardcoded config, with fallbacks for environment variables) ---
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    
+    // Use the hardcoded config since the environment variable is not being injected
+    const firebaseConfig = FIREBASE_CONFIG; 
+    
+    // Check for initialAuthToken but don't let its absence break the app
     const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
     // --- FIREBASE/SUPABASE CLIENTS ---
     let app, db, auth;
-    let supabase; // Supabase Client
+    let supabase;
     let currentUserId = null;
     let authReady = false;
 
@@ -140,28 +158,26 @@
 
     // --- CORE INITIALIZATION ---
     async function initializeAppAndAuth() {
-        if (!firebaseConfig) {
-            console.error("Firebase config not available.");
-            showModal("Error", "Firebase configuration is missing.");
-            return;
-        }
-
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        
-        // Initialize Supabase Client with your keys
-        supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // The check for !firebaseConfig is now implicitly removed because it's hardcoded.
+        // It will only fail if the hardcoded values are invalid.
 
         try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            // Initialize Supabase Client
+            supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
             if (initialAuthToken) {
                 await signInWithCustomToken(auth, initialAuthToken);
             } else {
                 await signInAnonymously(auth);
             }
         } catch (error) {
-            console.error("Firebase Auth initialization failed:", error);
-            await signInAnonymously(auth); // Fallback to anonymous
+            console.error("Initialization Failed:", error);
+            showModal("Initialization Error", `A core service failed to load. Please check your **Firebase** and **Supabase** configuration keys. Error: ${error.message}`);
+            return; // Stop initialization if core setup fails
         }
 
         onAuthStateChanged(auth, (user) => {
@@ -177,7 +193,6 @@
     }
 
     // --- FIRESTORE USER SYNC ---
-    // This function ensures a user profile exists in Firestore and checks their current payment status.
     async function syncFirestoreProfile(user) {
         if (!db || !user.uid) return;
 
@@ -186,7 +201,6 @@
         try {
             const docSnap = await getDoc(userDocRef);
             if (!docSnap.exists()) {
-                // Create profile document in Firestore (creating the 'users' collection if it's the first one)
                 await setDoc(userDocRef, {
                     uid: user.uid,
                     email: user.email || 'N/A',
@@ -196,7 +210,6 @@
                 });
             } else {
                 const profileData = docSnap.data();
-                // Update UI based on pre-existing payment status in Firestore
                 if (profileData.hasPaid) {
                     togglePurchaseStatus(true);
                 }
@@ -207,7 +220,6 @@
     }
     
     // --- FIRESTORE PAYMENT STATUS UPDATE ---
-    // Updates the hasPaid status in Firestore after a successful order creation in Supabase.
     async function updateFirestorePaymentStatus(status) {
         if (!db || !currentUserId) return;
         const userDocRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'user_data', 'profile');
@@ -220,19 +232,16 @@
 
 
     // --- SUPABASE EDGE FUNCTION CALL (CREATE ORDER) ---
-    // This function calls your deployed 'create-order' Supabase Edge Function.
     async function createOrder() {
         if (!authReady || !currentUserId || !supabase) {
             showModal("Error", "Authentication is not ready or Supabase client is not initialized.");
             return;
         }
 
-        // Show loading state
         checkoutContent.classList.add('hidden');
         loadingIndicator.classList.remove('hidden');
 
         try {
-            // Get the Firebase ID token for authorization
             const token = await auth.currentUser.getIdToken();
 
             const orderData = {
@@ -242,11 +251,8 @@
                 currency: 'USD',
             };
 
-            // Invoke the Supabase Edge Function 'create-order'
             const { data, error } = await supabase.functions.invoke('create-order', {
                 body: orderData,
-                // Pass the Firebase ID token in the Authorization header 
-                // for the Supabase function to verify the user identity.
                 headers: {
                     'Authorization': `Bearer ${token}`, 
                     'Content-Type': 'application/json'
@@ -254,27 +260,20 @@
             });
 
             if (error) {
-                // If the function returns an error (e.g., failed DB insert, RLS violation)
                 console.error("Supabase Function Error:", error);
-                throw new Error(error.message || "Failed to create order via Supabase function.");
+                throw new Error(error.message || "Failed to create order via Supabase function. Check your Edge Function logs.");
             }
             
             // --- SUCCESS ---
-            
-            // 1. Update Firestore profile to reflect payment
             await updateFirestorePaymentStatus(true);
-
-            // 2. Update UI
             togglePurchaseStatus(true);
             showModal("Success!", "Order created successfully in Supabase and your account is upgraded.");
 
         } catch (error) {
             console.error("Order Creation Failed:", error);
             showModal("Payment Error", `There was an issue processing your order: ${error.message}.`);
-            // Ensure UI is restored if the transaction failed
             togglePurchaseStatus(false); 
         } finally {
-            // Hide loading state
             loadingIndicator.classList.add('hidden');
             if (purchaseSuccessDiv.classList.contains('hidden')) {
                  checkoutContent.classList.remove('hidden');
@@ -291,7 +290,6 @@
         const display = user.isAnonymous ? 'Anonymous' : (user.displayName || user.email || 'User');
         userInfoSpan.innerHTML = `User ID: <span class="text-white font-mono text-xs">${user.uid}</span> | Signed in as: <span class="text-blue-300">${display}</span>`;
         
-        // Sync the user profile (and check paid status) with Firestore
         syncFirestoreProfile(user);
     }
 
@@ -336,3 +334,4 @@
 
 </body>
 </html>
+```eof
