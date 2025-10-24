@@ -164,6 +164,7 @@
         </div>
     </footer>
 
+    <!-- Firebase Compatibility SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -214,6 +215,7 @@
             function updateAuthUI(user) {
                 if (user) {
                     isUserLoggedIn = true;
+                    // Show user info on logout button
                     logoutNavBtn.textContent = `🚪 Logout (${user.displayName || user.email || 'User'})`;
                     logoutNavBtn.classList.remove('hidden');
                     hideAuthModal(); // Hide modal on successful sign-in
@@ -233,8 +235,8 @@
 
                 try {
                     // Use signInWithPopup for browser compatibility
-                    const result = await auth.signInWithPopup(provider);
-                    // The auth.onAuthStateChanged listener handles hiding the modal and updating the UI
+                    await auth.signInWithPopup(provider);
+                    // The auth.onAuthStateChanged listener handles UI updates and hiding the modal
                     
                 } catch (error) {
                     console.error("Error signing in with Google:", error);
@@ -276,6 +278,17 @@
                 updateAuthUI(user);
             });
 
+            // --- UTILITY: Clean chapter name for a URL/filename ---
+            function cleanChapterName(name) {
+                // 1. Remove leading numbers (like '3. ')
+                // 2. Convert to lowercase
+                // 3. Replace any non-alphanumeric characters (including spaces) with a hyphen
+                return name
+                    .replace(/^\d+\.\s*/, '') 
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-'); 
+            }
+
             // --- QUIZ DATA & LOGIC ---
             
             const bookData = {
@@ -304,11 +317,11 @@
                 // --- CORE LOGIC: CHECK AUTH STATUS ---
                 if (!user) {
                     showAuthModal();
-                    // STOP EXECUTION: Google Auth is called, Quiz start is prevented.
+                    // STOP EXECUTION: User must sign in first.
                     return; 
                 }
                 
-                // If user exists, proceed with logging and "payment/access" check
+                // If user exists, proceed with logging and navigation
                 const cleanedChapterName = chapterName.trim();
                 
                 // --- LOG THE ATTEMPT TO FIRESTORE (Quiz Start) ---
@@ -320,19 +333,18 @@
                     action: 'Quiz Attempted'
                 })
                 .then(() => {
-                    // This is where a **REAL PAYMENT CHECK** would happen.
-                    // Since you mentioned the payment gateway isn't working, 
-                    // we'll simulate the successful access post-authentication.
-
-                    // Check if the user is a premium user (SIMULATED CHECK)
-                    // In a real app, you would check Firestore or a payment service here.
-                    const isPremium = true; // Assume access is granted after login for this demonstration.
+                    // SIMULATED PREMIUM/PAYMENT CHECK
+                    const isPremium = true; 
 
                     if (isPremium) {
-                        alert(`ACCESS GRANTED for ${cleanedChapterName}! (A real quiz would load now). Logged to Firestore.`);
-                        // window.location.href = '...'; // Removed to prevent navigation errors
+                        const filename = cleanChapterName(cleanedChapterName);
+                        console.log(`ACCESS GRANTED. Attempting navigation to: quizzes/${filename}.html`);
+                        
+                        // --- RE-ENABLING NAVIGATION ---
+                        window.location.href = `quizzes/${filename}.html`;
+                        
                     } else {
-                        // This block would contain the code to show a payment modal or gateway.
+                        // This block would show a payment modal in a real app
                         alert(`ACCESS DENIED for ${cleanedChapterName}. Please complete payment or subscription! (You are logged in, but not paid.)`);
                     }
 
