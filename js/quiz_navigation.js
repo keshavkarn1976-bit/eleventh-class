@@ -6,15 +6,15 @@
 
 // --- CONFIGURATION: REPLACE THESE PLACEHOLDERS ---
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
-    projectId: "YOUR_FIREBASE_PROJECT_ID",
+    apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
+    authDomain: "quiz-signon.firebaseapp.com",
+    projectId: "quiz-signon",
     // Add other Firebase config fields if necessary (databaseURL, storageBucket, etc.)
 };
 
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-const RAZORPAY_KEY_ID = 'YOUR_RAZORPAY_KEY_ID'; // Public ID, starts with 'rzp_live' or 'rzp_test'
+const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY';
+const RAZORPAY_KEY_ID = 'rzp_live_RX9fC2dHEynIRr'; // Public ID, starts with 'rzp_live' or 'rzp_test'
 const PAYMENT_AMOUNT_PAISE = 50000; // e.g., ₹500.00 = 50000 paise (CRITICAL: Must match server)
 const API_URL_CREATE_ORDER = '/functions/v1/create-order'; 
 const API_URL_SYNC_USER = '/functions/v1/sync-user'; 
