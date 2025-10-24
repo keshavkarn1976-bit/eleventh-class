@@ -1,337 +1,464 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Economy Simulator & Payment</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CBSE Class 11 Economics Curriculum</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://kit.fontawesome.com/a7b5e61239.js" crossorigin="anonymous"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'cbse-blue': '#1a3e6a', 
+                        'cbse-light': '#f0f4f8', 
+                        'accent-green': '#059669', 
+                        'accent-red': '#dc2626', 
+                        'accent-orange': '#ea580c', 
+                        'unit-bg': '#e3f2fd', 
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #1f2937; color: #f9fafb; }
-        .card { background-color: #374151; border: 1px solid #4b5563; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-        .btn-primary { background-color: #3b82f6; transition: background-color 0.2s; }
-        .btn-primary:hover { background-color: #2563eb; }
-        .btn-secondary { background-color: #4b5563; color: #f9fafb; }
-        .btn-secondary:hover { background-color: #6b7280; }
-        .auth-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .modal { background-color: rgba(0, 0, 0, 0.7); }
-        .spinner { border-top-color: #3b82f6; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .book-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transform: translate(0);
+        }
+        .book-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+        }
+        .unit-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out;
+        }
+        .unit-header.active .icon-rotate {
+            transform: rotate(180deg);
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #1a3e6a;
+            margin-bottom: 1.5rem;
+            transition: color 150ms;
+        }
+        .back-btn:hover {
+            color: rgba(26, 62, 106, 0.8);
+        }
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
     </style>
 </head>
-<body>
+<body class="bg-cbse-light min-h-screen antialiased">
 
-<div id="global-modal" class="modal fixed inset-0 z-50 hidden items-center justify-center p-4" onclick="hideModal()">
-    <div class="card w-full max-w-md p-6 rounded-lg text-center" onclick="event.stopPropagation()">
-        <h3 id="modal-title" class="text-xl font-bold mb-4 text-white"></h3>
-        <p id="modal-message" class="text-gray-300 mb-6"></p>
-        <button onclick="hideModal()" class="btn-primary py-2 px-4 rounded-lg font-semibold w-full">Close</button>
-    </div>
-</div>
-
-<div id="app-container" class="auth-container p-4">
-    
-    <div id="auth-screen" class="card p-8 rounded-xl w-full max-w-md text-center">
-        <h1 class="text-3xl font-bold mb-6 text-white">Welcome to Economy Simulator</h1>
-        <p class="text-gray-400 mb-8">Sign in to start your economy simulation and secure your account.</p>
-        <button id="google-signin-btn" class="btn-primary py-3 px-6 rounded-xl font-semibold w-full flex items-center justify-center space-x-3">
-            <i class="fab fa-google text-lg"></i>
-            <span>Sign in with Google</span>
-        </button>
-        <p class="mt-4 text-sm text-gray-500" id="auth-status">Awaiting authentication...</p>
-    </div>
-
-    <div id="main-app-screen" class="hidden w-full max-w-4xl space-y-8">
-        <header class="flex justify-between items-center p-4 bg-gray-800 rounded-xl shadow-lg">
-            <h1 class="text-2xl font-bold text-blue-400">Economy Dashboard</h1>
-            <div class="flex items-center space-x-4">
-                <span id="user-info" class="text-sm text-gray-400 truncate"></span>
-                <button id="signout-btn" class="btn-secondary py-2 px-4 rounded-lg text-sm">Sign Out</button>
+    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-4 md:mb-0 cursor-pointer" id="header-home-btn">
+                <span data-lucide="book-open-check" class="text-cbse-blue w-8 h-8"></span>
+                <h1 class="text-2xl font-extrabold text-cbse-blue">CBSE Class 11 Economics Portal</h1>
             </div>
-        </header>
+            <nav class="flex space-x-2 sm:space-x-4">
+                <button id="logout-nav-btn" class="nav-link hidden">🚪 Logout</button>
+            </nav>
+        </div>
+    </header>
 
-        <div class="card p-6 rounded-xl">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Subscription & Checkout</h2>
-            
-            <div id="loading-indicator" class="text-center py-10 hidden">
-                <div class="spinner w-8 h-8 border-4 border-gray-600 rounded-full mx-auto mb-2"></div>
-                <p class="text-gray-400">Processing order via Supabase Edge Function...</p>
-            </div>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div id="quiz-content-wrapper"> 
+            <div id="book-select-view" class="view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b-2 border-cbse-blue pb-2">Select Your Book</h2>
+                <div class="grid md:grid-cols-3 gap-8">
+                    
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-green book-select-btn" data-book="Stats" data-title="Book 1: Statistics for Economics" data-color="accent-green">
+                        <span data-lucide="bar-chart-3" class="w-10 h-10 text-accent-green mb-3"></span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-1">Statistics for Economics</h3>
+                        <p class="text-gray-500 text-sm">Units 1-3 | Data Analysis and Interpretation</p>
+                    </div>
 
-            <div id="checkout-content">
-                <div class="flex justify-between items-center py-3 border-b border-gray-700">
-                    <div class="font-semibold text-lg text-white">Pro Simulation Access</div>
-                    <div class="text-2xl font-bold text-green-400">$19.99</div>
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-cbse-blue book-select-btn" data-book="Micro" data-title="Book 2: Introductory Microeconomics" data-color="cbse-blue">
+                        <span data-lucide="dollar-sign" class="w-10 h-10 text-cbse-blue mb-3"></span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-1">Introductory Microeconomics</h3>
+                        <p class="text-gray-500 text-sm">Units 4-7 | Consumer, Producer, and Market Theory</p>
+                    </div>
+
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-red book-select-btn" data-book="IED" data-title="Book 3: Indian Economic Development" data-color="accent-red">
+                        <span data-lucide="factory" class="w-10 h-10 text-accent-red mb-3"></span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-1">Indian Economic Development</h3>
+                        <p class="text-gray-500 text-sm">Units 1-3 | Economic History and Current Challenges</p>
+                    </div>
+                    
                 </div>
-
-                <div class="mt-6">
-                    <button id="checkout-btn" class="btn-primary py-3 px-6 rounded-xl font-semibold w-full text-lg">
-                        Proceed to Checkout
+                
+                <section id="mock-test" class="bg-white p-8 rounded-xl shadow-lg border-t-2 border-b-2 border-cbse-blue mt-12 flex flex-col items-center text-center">
+                    <h4 class="text-3xl font-extrabold text-cbse-blue mb-2">Full Syllabus Mock Test</h4>
+                    <p class="text-gray-600 text-lg mb-4">Test your readiness with a full-length, 90-minute examination covering all CBSE Class 11 Economics chapters.</p>
+                    <button class="px-8 py-3 bg-accent-red text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-150 text-xl quiz-start-btn" data-chapter="Master Quiz">
+                        Start Master Quiz
                     </button>
-                    <p class="text-sm text-center mt-3 text-gray-500">This calls the 'create-order' Supabase Edge Function.</p>
+                </section>
+            </div>
+
+            <div id="units-view" class="view hidden">
+                <button id="back-to-books-btn" class="back-btn">
+                    <span data-lucide="arrow-left" class="w-5 h-5 mr-2"></span> Back to Books
+                </button>
+                <h2 id="units-view-title" class="text-3xl font-bold text-gray-800 mb-6 border-b-2 pb-2"></h2>
+                <div id="units-list">
                 </div>
             </div>
+        </div>
+        </main>
 
-            <div id="purchase-success" class="text-center py-6 hidden">
-                <i class="fas fa-check-circle text-green-500 text-6xl mb-4"></i>
-                <h3 class="text-2xl font-bold text-white mb-2">Purchase Successful!</h3>
-                <p class="text-gray-400">Your Pro Simulation Access is now active (status updated in Firestore).</p>
+    <div id="auth-modal" class="modal-overlay hidden">
+        <div id="auth-view" class="auth-container bg-white relative">
+            <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
+                <span data-lucide="x" class="w-6 h-6"></span>
+            </button>
+            <h2 id="auth-header" class="text-2xl font-bold text-center mb-6 text-cbse-blue">
+                Login to Access Quizzes
+            </h2>
+
+            <div class="mt-4">
+                <button id="google-sign-in-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center space-x-3 shadow-md">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_google_g_standard.png" alt="Google logo" class="w-6 h-6 bg-white rounded-full">
+                    <span>Sign in with Google</span>
+                </button>
             </div>
-        </div>
 
-        <div class="card p-6 rounded-xl">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">Order History</h2>
-            <div class="text-gray-400 italic">Order history will be loaded here from Supabase.</div>
+            <p id="error-message" class="mt-4 text-center text-red-500 font-medium"></p>
         </div>
-
     </div>
 
-</div>
+    <footer class="bg-cbse-blue mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Redesigned Curriculum View</small>
+        </div>
+    </footer>
 
-<script type="module">
-    // --- FIREBASE AND SUPABASE IMPORTS ---
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    // =========================================================================
-    // !!! CRITICAL: FIREBASE CONFIGURATION (Fixes "Firebase config not available" error) !!!
-    // REPLACE these with your actual Firebase project settings.
-    // =========================================================================
-    const FIREBASE_CONFIG = {
-        apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ", // <-- REPLACE THIS
-        authDomain: "quiz-signon.firebaseapp.com", // <-- REPLACE THIS
-        projectId: "quiz-signon", // <-- REPLACE THIS
-        storageBucket: "quiz-signon.firebasestorage.app",
-        messagingSenderId: "863414222321",
-        appId: "1:863414222321:web:819f5564825308bcd9d850"
-    };
-    
-    // =========================================================================
-    // !!! IMPORTANT: SUPABASE CONFIGURATION !!!
-    // REPLACE these with your actual Supabase project settings.
-    // =========================================================================
-    const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY'; 
-    // =========================================================================
 
-    // --- GLOBAL VARIABLES (Now using hardcoded config, with fallbacks for environment variables) ---
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-    
-    // Use the hardcoded config since the environment variable is not being injected
-    const firebaseConfig = FIREBASE_CONFIG; 
-    
-    // Check for initialAuthToken but don't let its absence break the app
-    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+    <script>
+        // YOUR FIREBASE CONFIGURATION
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
+            authDomain: "quiz-signon.firebaseapp.com",
+            projectId: "quiz-signon",
+            storageBucket: "quiz-signon.firebasestorage.app",
+            messagingSenderId: "863414222321",
+            appId: "1:863414222321:web:819f5564825308bcd9d850",
+            measurementId: "G-4EFDM0CRYY"
+        };
 
-    // --- FIREBASE/SUPABASE CLIENTS ---
-    let app, db, auth;
-    let supabase;
-    let currentUserId = null;
-    let authReady = false;
+        // Initialize Firebase App, Auth, and Firestore using the compatibility layer
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); 
+        const db = app.firestore(); 
+        
+        let isUserLoggedIn = false; 
 
-    // --- DOM ELEMENTS ---
-    const authScreen = document.getElementById('auth-screen');
-    const mainAppScreen = document.getElementById('main-app-screen');
-    const googleSignInBtn = document.getElementById('google-signin-btn');
-    const signOutBtn = document.getElementById('signout-btn');
-    const userInfoSpan = document.getElementById('user-info');
-    const checkoutBtn = document.getElementById('checkout-btn');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const checkoutContent = document.getElementById('checkout-content');
-    const purchaseSuccessDiv = document.getElementById('purchase-success');
+        // --- DOM Elements ---
+        const authModal = document.getElementById('auth-modal');
+        const logoutNavBtn = document.getElementById('logout-nav-btn');
+        const errorMessage = document.getElementById('error-message');
+        const unitsList = document.getElementById('units-list');
+        const unitsViewTitle = document.getElementById('units-view-title');
+        const backToBooksBtn = document.getElementById('back-to-books-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const headerHomeBtn = document.getElementById('header-home-btn');
+        const googleSignInBtn = document.getElementById('google-sign-in-btn'); 
 
-    // --- MODAL FUNCTIONS ---
-    function showModal(title, message) {
-        document.getElementById('modal-title').textContent = title;
-        document.getElementById('modal-message').textContent = message;
-        document.getElementById('global-modal').classList.remove('hidden');
-        document.getElementById('global-modal').classList.add('flex');
-    }
+        // --- AUTH/MODAL FUNCTIONS ---
 
-    function hideModal() {
-        document.getElementById('global-modal').classList.add('hidden');
-        document.getElementById('global-modal').classList.remove('flex');
-    }
-
-    // --- CORE INITIALIZATION ---
-    async function initializeAppAndAuth() {
-        // The check for !firebaseConfig is now implicitly removed because it's hardcoded.
-        // It will only fail if the hardcoded values are invalid.
-
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            
-            // Initialize Supabase Client
-            supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            if (initialAuthToken) {
-                await signInWithCustomToken(auth, initialAuthToken);
-            } else {
-                await signInAnonymously(auth);
-            }
-        } catch (error) {
-            console.error("Initialization Failed:", error);
-            showModal("Initialization Error", `A core service failed to load. Please check your **Firebase** and **Supabase** configuration keys. Error: ${error.message}`);
-            return; // Stop initialization if core setup fails
+        function showAuthModal() {
+            authModal.classList.remove('hidden');
+            errorMessage.textContent = '';
         }
 
-        onAuthStateChanged(auth, (user) => {
-            authReady = true;
-            if (user) {
-                currentUserId = user.uid;
-                handleUserLogin(user);
+        function hideAuthModal() {
+            authModal.classList.add('hidden');
+        }
+        
+        function updateAuthUI(user) {
+             if (user) {
+                isUserLoggedIn = true;
+                logoutNavBtn.classList.remove('hidden');
             } else {
-                currentUserId = null;
-                handleUserLogout();
+                isUserLoggedIn = false;
+                logoutNavBtn.classList.add('hidden');
+            }
+        }
+
+        // --- GOOGLE SIGN-IN LOGIC ---
+
+        googleSignInBtn.addEventListener('click', async () => {
+            errorMessage.textContent = 'Signing in with Google...';
+            googleSignInBtn.disabled = true;
+
+            const provider = new firebase.auth.GoogleAuthProvider();
+
+            try {
+                await auth.signInWithPopup(provider);
+                hideAuthModal(); 
+                alert("Login successful! You can now access the quizzes."); 
+
+            } catch (error) {
+                console.error("Error signing in with Google:", error);
+                
+                let displayMessage = 'Sign-in failed. Check the console for details.';
+                if (error.code === 'auth/popup-closed-by-user') {
+                    displayMessage = 'Sign-in window closed by user.';
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    displayMessage = 'Sign-in was blocked by a previous attempt.';
+                } else {
+                    displayMessage = 'Google Sign-in failed: ' + error.message;
+                }
+
+                errorMessage.textContent = displayMessage;
+            } finally {
+                 googleSignInBtn.disabled = false;
             }
         });
-    }
 
-    // --- FIRESTORE USER SYNC ---
-    async function syncFirestoreProfile(user) {
-        if (!db || !user.uid) return;
 
-        const userDocRef = doc(db, 'artifacts', appId, 'users', user.uid, 'user_data', 'profile');
-        
-        try {
-            const docSnap = await getDoc(userDocRef);
-            if (!docSnap.exists()) {
-                await setDoc(userDocRef, {
-                    uid: user.uid,
-                    email: user.email || 'N/A',
-                    displayName: user.displayName || 'Anonymous User',
-                    createdAt: new Date().toISOString(),
-                    hasPaid: false, // Default state
-                });
-            } else {
-                const profileData = docSnap.data();
-                if (profileData.hasPaid) {
-                    togglePurchaseStatus(true);
-                }
+        // --- LOGOUT & AUTH STATE ---
+
+        closeModalBtn.addEventListener('click', hideAuthModal);
+
+        logoutNavBtn.addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                alert("You have been logged out.");
+            } catch (error) {
+                console.error("Error signing out:", error);
             }
-        } catch (error) {
-            console.error("Error syncing Firestore profile:", error);
+        });
+
+        // This listener updates the UI on load and whenever auth state changes.
+        auth.onAuthStateChanged((user) => {
+            updateAuthUI(user);
+        });
+
+        // --- QUIZ DATA & LOGIC ---
+        
+        const bookData = {
+            'Stats': [
+                { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
+                { unit: 'UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA', chapters: ['2. Collection of Data', '3. Organisation of Data', '4. Presentation of Data'] },
+                { unit: 'UNIT 3: STATISTICAL TOOLS AND INTERPRETATION', chapters: ['5. Measures of Central Tendency', '6. Measures of Dispersion', '7. Correlation', '8. Index Numbers', '9. Use of Statistical Tools (Project)'] }
+            ],
+            'Micro': [
+                { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
+                { unit: 'UNIT 5: CONSUMER EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
+                { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
+                { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
+                { unit: 'REVISION SECTION', chapters: ['Important Questions', 'Value Based Questions', 'Case Based Questions (CBQs)', 'Last Minute Revision'] }
+            ],
+            'IED': [
+                { unit: 'UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)', chapters: ['1. Indian Economy on the Eve of Independence', '2. Indian Economy (1950–1990)', '3. Liberalisation, Privatisation and Globalisation: An Appraisal'] },
+                { unit: 'UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY', chapters: ['4. Human Capital Formation in India', '5. Rural Development', '6. Employment: Growth, Informalisation and Other Issues', '7. Infrastructure', '8. Environment and Sustainable Development'] },
+                { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
+            ]
+        };
+
+        function startQuiz(chapterName) {
+            const user = auth.currentUser;
+            
+            // --- CORE LOGIC: CHECK AUTH STATUS ---
+            if (!user) {
+                showAuthModal();
+                // STOP EXECUTION: Google Auth is called, Quiz start is prevented.
+                return; 
+            }
+            
+            // If user exists, proceed with logging and navigation (which is payment logic).
+            const cleanedChapterName = chapterName.trim();
+            
+            // --- LOG THE ATTEMPT TO FIRESTORE (Quiz Start) ---
+            db.collection("quiz_attempts").add({
+                userId: user.uid,
+                email: user.email || 'N/A', 
+                chapter: cleanedChapterName,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
+                action: 'Quiz Attempted'
+            })
+            .then(() => {
+                console.log("Quiz attempt logged successfully for:", cleanedChapterName);
+            })
+            .catch((error) => {
+                console.error("Error logging quiz attempt (Check Firestore Rules!): ", error);
+            });
+            // --- END LOGIC ---
+            
+            // Existing Quiz Navigation Logic (Simulates paywall passing/payment confirmation)
+            if (cleanedChapterName.includes('4. Elasticity of Demand')) {  
+                window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
+                return;
+            }
+
+            if (cleanedChapterName.includes("2. Consumer Equilibrium")) {  
+                window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
+                return;
+            }
+
+            if (cleanedChapterName.includes('3. Demand')) {  
+                window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
+                return;
+            }
+            
+            // Default alert for unimplemented quizzes
+            const urlSafeName = cleanedChapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
+            alert(`Quiz not yet implemented for: ${cleanedChapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
         }
-    }
-    
-    // --- FIRESTORE PAYMENT STATUS UPDATE ---
-    async function updateFirestorePaymentStatus(status) {
-        if (!db || !currentUserId) return;
-        const userDocRef = doc(db, 'artifacts', appId, 'users', currentUserId, 'user_data', 'profile');
-        try {
-            await setDoc(userDocRef, { hasPaid: status }, { merge: true });
-        } catch (error) {
-            console.error("Error updating Firestore payment status:", error);
-        }
-    }
-
-
-    // --- SUPABASE EDGE FUNCTION CALL (CREATE ORDER) ---
-    async function createOrder() {
-        if (!authReady || !currentUserId || !supabase) {
-            showModal("Error", "Authentication is not ready or Supabase client is not initialized.");
-            return;
+        
+        function showView(viewId) {
+            document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewId + '-view').classList.remove('hidden');
+            window.scrollTo(0, 0);
         }
 
-        checkoutContent.classList.add('hidden');
-        loadingIndicator.classList.remove('hidden');
+        function showUnits(bookKey, title, color) {
+            const units = bookData[bookKey];
+            
+            unitsViewTitle.textContent = title;
+            unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
 
-        try {
-            const token = await auth.currentUser.getIdToken();
+            let html = '';
+            units.forEach((unitItem, index) => {
+                const unitId = `${bookKey}-unit-${index}`;
+                
+                let chaptersHtml = unitItem.chapters.map((chapter) => `
+                    <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
+                        <span class="text-gray-700 font-medium">${chapter}</span>
+                        <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">Quiz</button>
+                    </div>
+                `).join('');
 
-            const orderData = {
-                user_id: currentUserId,
-                amount: 19.99,
-                description: 'Pro Simulation Access Subscription',
-                currency: 'USD',
-            };
-
-            const { data, error } = await supabase.functions.invoke('create-order', {
-                body: orderData,
-                headers: {
-                    'Authorization': `Bearer ${token}`, 
-                    'Content-Type': 'application/json'
-                }
+                html += `
+                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                        <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="${unitId}">
+                            <span>${unitItem.unit}</span>
+                            <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                        </div>
+                        <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            ${chaptersHtml}
+                        </div>
+                    </div>
+                `;
             });
 
-            if (error) {
-                console.error("Supabase Function Error:", error);
-                throw new Error(error.message || "Failed to create order via Supabase function. Check your Edge Function logs.");
-            }
+            unitsList.innerHTML = html;
+            lucide.createIcons(); 
+            showView('units');
             
-            // --- SUCCESS ---
-            await updateFirestorePaymentStatus(true);
-            togglePurchaseStatus(true);
-            showModal("Success!", "Order created successfully in Supabase and your account is upgraded.");
+            attachEventListeners(); 
+            setTimeout(initAccordion, 10); 
+        }
 
-        } catch (error) {
-            console.error("Order Creation Failed:", error);
-            showModal("Payment Error", `There was an issue processing your order: ${error.message}.`);
-            togglePurchaseStatus(false); 
-        } finally {
-            loadingIndicator.classList.add('hidden');
-            if (purchaseSuccessDiv.classList.contains('hidden')) {
-                 checkoutContent.classList.remove('hidden');
+        function initAccordion() {
+            document.querySelectorAll('.unit-header').forEach(header => {
+                const content = document.getElementById(header.dataset.target);
+                if (content) {
+                    if (header.classList.contains('active')) {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                    
+                    header.removeEventListener('click', handleAccordionClick);
+                    header.addEventListener('click', handleAccordionClick);
+                }
+            });
+        }
+        
+        function handleAccordionClick(event) {
+            const header = event.currentTarget;
+            const content = document.getElementById(header.dataset.target);
+            
+            header.classList.toggle('active');
+            if (header.classList.contains('active')) {
+                content.style.maxHeight = content.scrollHeight + "px";
+            } else {
+                content.style.maxHeight = '0';
             }
         }
-    }
 
+        // --- ATTACH EVENT LISTENERS (Consolidated) ---
 
-    // --- UI/STATE HANDLERS ---
-    function handleUserLogin(user) {
-        authScreen.classList.add('hidden');
-        mainAppScreen.classList.remove('hidden');
-        
-        const display = user.isAnonymous ? 'Anonymous' : (user.displayName || user.email || 'User');
-        userInfoSpan.innerHTML = `User ID: <span class="text-white font-mono text-xs">${user.uid}</span> | Signed in as: <span class="text-blue-300">${display}</span>`;
-        
-        syncFirestoreProfile(user);
-    }
-
-    function handleUserLogout() {
-        authScreen.classList.remove('hidden');
-        mainAppScreen.classList.add('hidden');
-        togglePurchaseStatus(false); 
-        userInfoSpan.textContent = 'User Info';
-    }
-
-    function togglePurchaseStatus(paid) {
-        if (paid) {
-            checkoutContent.classList.add('hidden');
-            purchaseSuccessDiv.classList.remove('hidden');
-        } else {
-            checkoutContent.classList.remove('hidden');
-            purchaseSuccessDiv.classList.add('hidden');
+        function attachEventListeners() {
+            document.querySelectorAll('.quiz-start-btn').forEach(button => {
+                button.removeEventListener('click', handleQuizButtonClick); 
+                button.addEventListener('click', handleQuizButtonClick);
+            });
+            
+            document.querySelectorAll('.book-select-btn').forEach(card => {
+                if (!card.hasAttribute('data-listener-attached')) {
+                    card.addEventListener('click', handleBookSelectClick);
+                    card.setAttribute('data-listener-attached', 'true');
+                }
+            });
         }
-    }
 
-    // --- EVENT LISTENERS ---
-    googleSignInBtn.addEventListener('click', () => {
-        const provider = new GoogleAuthProvider();
-        signInWithPopup(auth, provider).catch(error => {
-            console.error("Google Sign-in failed:", error);
-            showModal("Sign-in Failed", `Could not complete Google Sign-in: ${error.message}`);
+        // --- Event Handlers that use Data Attributes ---
+
+        function handleQuizButtonClick(event) {
+            const chapterName = event.currentTarget.dataset.chapter;
+            // This is the gate-check point!
+            startQuiz(chapterName);
+        }
+
+        function handleBookSelectClick(event) {
+            const card = event.currentTarget;
+            const book = card.dataset.book;
+            const title = card.dataset.title;
+            const color = card.dataset.color;
+            showUnits(book, title, color);
+        }
+        
+        // --- Initialization on Document Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
+            });
+
+            attachEventListeners();
+            
+            headerHomeBtn.addEventListener('click', () => showView('book-select'));
+            backToBooksBtn.addEventListener('click', () => showView('book-select'));
         });
-    });
-
-    signOutBtn.addEventListener('click', () => {
-        signOut(auth).catch(error => {
-            console.error("Sign-out failed:", error);
-            showModal("Sign-out Failed", "Could not sign out. Please try again.");
-        });
-    });
-
-    checkoutBtn.addEventListener('click', createOrder);
-
-    // --- START APPLICATION ---
-    initializeAppAndAuth();
-</script>
-
+        
+    </script>
 </body>
 </html>
-```eof
