@@ -1,38 +1,636 @@
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
-    
-    <script>
-        // --- SECURE CONFIGURATION (Global Constants) ---
-        const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY';
-        const RAZORPAY_KEY_ID = 'rzp_live_RX9fC2dHEynIRr'; 
-        const PAYMENT_AMOUNT_PAISE = 50000;
-        const API_URL_CREATE_ORDER = '/functions/v1/create-order'; 
-        const API_URL_SYNC_USER = '/functions/v1/sync-user'; 
-        
-        // PREMIUM QUIZ LIST
-        const PREMIUM_CHAPTERS = [
-            "2. Consumer Equilibrium",
-            "3. Demand",
-            "4. Elasticity of Demand",
-            "Master Quiz" 
-        ];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CBSE Class 11 Economics Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Ignore: cdn.tailwindcss.com warning will always appear here in development.
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'cbse-blue': '#1a3e6a', 
+                        'cbse-light': '#f0f4f8', 
+                        'accent-green': '#059669', 
+                        'accent-red': '#dc2626', 
+                        'accent-orange': '#ea580c', 
+                        'unit-bg': '#e3f2fd', 
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script> 
 
-        // --- FIREBASE INITIALIZATION ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
-            authDomain: "quiz-signon.firebaseapp.com",
-            projectId: "quiz-signon",
-            storageBucket: "quiz-signon.firebasestorage.app",
-            messagingSenderId: "863414222321",
-            appId: "1:863414222321:web:819f5564825308bcd9d850",
-            measurementId: "G-4EFDM0CRYY"
-        };
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
+    
+    <script>
+        // --- SECURE CONFIGURATION (Global Constants) ---
+        const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY';
+        const RAZORPAY_KEY_ID = 'rzp_live_RX9fC2dHEynIRr'; 
+        const PAYMENT_AMOUNT_PAISE = 50000;
+        const API_URL_CREATE_ORDER = '/functions/v1/create-order'; 
+        const API_URL_SYNC_USER = '/functions/v1/sync-user'; 
+        
+        // PREMIUM QUIZ LIST
+        const PREMIUM_CHAPTERS = [
+            "2. Consumer Equilibrium",
+            "3. Demand",
+            "4. Elasticity of Demand",
+            "Master Quiz" 
+        ];
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const auth = app.auth(); 
-        const db = app.firestore(); 
-        
-        // Supabase client is initialized here.
-        // FIX: Changed 'const supabase' to 'const supabaseClient' to resolve the ReferenceError.
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    </script>
+        // --- FIREBASE INITIALIZATION ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
+            authDomain: "quiz-signon.firebaseapp.com",
+            projectId: "quiz-signon",
+            storageBucket: "quiz-signon.firebasestorage.app",
+            messagingSenderId: "863414222321",
+            appId: "1:863414222321:web:819f5564825308bcd9d850",
+            measurementId: "G-4EFDM0CRYY"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = app.auth(); 
+        const db = app.firestore(); 
+        
+        // Supabase client is initialized here.
+        // FIX: Changed 'const supabase' to 'const supabaseClient' to resolve the ReferenceError.
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    </script>
+    
+    <style>
+        .book-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transform: translate(0);
+        }
+        .book-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            transform: translateY(-4px);
+        }
+        .unit-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out;
+        }
+        .unit-header.active .icon-rotate {
+            transform: rotate(180deg);
+        }
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #1a3e6a;
+            margin-bottom: 1.5rem;
+            transition: color 150ms;
+        }
+        .back-btn:hover {
+            color: rgba(26, 62, 106, 0.8);
+        }
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="bg-cbse-light min-h-screen antialiased">
+
+    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-4 md:mb-0 cursor-pointer" id="header-home-btn">
+                <span data-lucide="book-open-check" class="text-cbse-blue w-8 h-8"></span>
+                <h1 class="text-2xl font-extrabold text-cbse-blue">CBSE Class 11 Economics Portal</h1>
+            </div>
+            <nav class="flex space-x-2 sm:space-x-4">
+                <button id="logout-nav-btn" class="nav-link hidden">🚪 Logout</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div id="quiz-content-wrapper"> 
+            <div id="book-select-view" class="view">
+                <h2 class="text-3xl font-bold text-gray-800 mb-8 border-b-2 border-cbse-blue pb-2">Select Your Book</h2>
+                <div class="grid md:grid-cols-3 gap-8">
+                    
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-green book-select-btn" data-book="Stats" data-title="Book 1: Statistics for Economics" data-color="accent-green">
+                        <span data-lucide="bar-chart-3" class="w-10 h-10 text-accent-green mb-3"></span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-1">Statistics for Economics</h3>
+                        <p class="text-gray-500 text-sm">Units 1-3 | Data Analysis and Interpretation</p>
+                    </div>
+
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-cbse-blue book-select-btn" data-book="Micro" data-title="Book 2: Introductory Microeconomics" data-color="cbse-blue">
+                        <span data-lucide="dollar-sign" class="w-10 h-10 text-cbse-blue mb-3"></span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-1">Introductory Microeconomics</h3>
+                        <p class="text-gray-500 text-sm">Units 4-7 | Consumer, Producer, and Market Theory</p>
+                    </div>
+
+                    <div class="book-card bg-white p-6 rounded-xl border-t-4 border-accent-red book-select-btn" data-book="IED" data-title="Book 3: Indian Economic Development" data-color="accent-red">
+                        <span data-lucide="factory" class="w-10 h-10 text-accent-red mb-3"></span>
+                        <h3 class="text-xl font-bold text-gray-800 mb-1">Indian Economic Development</h3>
+                        <p class="text-gray-500 text-sm">Units 1-3 | Economic History and Current Challenges</p>
+                    </div>
+                    
+                </div>
+                
+                <section id="mock-test" class="bg-white p-8 rounded-xl shadow-lg border-t-2 border-b-2 border-cbse-blue mt-12 flex flex-col items-center text-center">
+                    <h4 class="text-3xl font-extrabold text-cbse-blue mb-2">Full Syllabus Mock Test</h4>
+                    <p class="text-gray-600 text-lg mb-4">Test your readiness with a full-length, 90-minute examination covering all CBSE Class 11 Economics chapters.</p>
+                    <button class="px-8 py-3 bg-accent-red text-white font-bold rounded-lg shadow-xl hover:bg-red-700 transition duration-150 text-xl quiz-start-btn" data-chapter="Master Quiz">
+                        Start Master Quiz
+                    </button>
+                </section>
+            </div>
+
+            <div id="units-view" class="view hidden">
+                <button id="back-to-books-btn" class="back-btn">
+                    <span data-lucide="arrow-left" class="w-5 h-5 mr-2"></span> Back to Books
+                </button>
+                <h2 id="units-view-title" class="text-3xl font-bold text-gray-800 mb-6 border-b-2 pb-2"></h2>
+                <div id="units-list">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="auth-modal" class="modal-overlay hidden">
+        <div id="auth-view" class="auth-container bg-white relative">
+            <button id="close-modal-btn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition">
+                <span data-lucide="x" class="w-6 h-6"></span>
+            </button>
+            <h2 id="auth-header" class="text-2xl font-bold text-center mb-6 text-cbse-blue">
+                Login to Access Quizzes
+            </h2>
+
+            <div class="mt-4">
+                <button id="google-sign-in-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition flex items-center justify-center space-x-3 shadow-md">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/4a/Logo_google_g_standard.png" alt="Google logo" class="w-6 h-6 bg-white rounded-full">
+                    <span>Sign in with Google</span>
+                </button>
+            </div>
+
+            <p id="error-message" class="mt-4 text-center text-red-500 font-medium"></p>
+        </div>
+    </div>
+
+    <footer class="bg-cbse-blue mt-12 py-6">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <small class="text-sm opacity-80">© 2025 CBSE Class 11 Academic Portal | Redesigned Curriculum View</small>
+        </div>
+    </footer>
+
+    <script>
+        let isUserLoggedIn = false; 
+
+        // --- DOM Elements ---
+        const authModal = document.getElementById('auth-modal');
+        const logoutNavBtn = document.getElementById('logout-nav-btn');
+        const errorMessage = document.getElementById('error-message');
+        const unitsList = document.getElementById('units-list');
+        const unitsViewTitle = document.getElementById('units-view-title');
+        const backToBooksBtn = document.getElementById('back-to-books-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const headerHomeBtn = document.getElementById('header-home-btn');
+        const googleSignInBtn = document.getElementById('google-sign-in-btn'); 
+
+        // --- AUTH/MODAL FUNCTIONS ---
+
+        function showAuthModal() {
+            authModal.classList.remove('hidden');
+            errorMessage.textContent = '';
+        }
+
+        function hideAuthModal() {
+            authModal.classList.add('hidden');
+        }
+        
+        function updateAuthUI(user) {
+             if (user) {
+                 isUserLoggedIn = true;
+                 logoutNavBtn.classList.remove('hidden');
+            } else {
+                 isUserLoggedIn = false;
+                 logoutNavBtn.classList.add('hidden');
+            }
+        }
+        
+        // --- CORE LOGIC: startQuiz (The Secure Access Gate) ---
+
+        async function startQuiz(chapterName) {
+            const user = auth.currentUser;
+            const cleanedChapterName = chapterName.trim();
+            
+            // 1. Authorization Check (Applies to ALL quizzes)
+            if (!user) {
+                sessionStorage.setItem('pendingQuiz', cleanedChapterName);
+                showAuthModal(); 
+                return;
+            }
+            
+            const isPremiumQuiz = PREMIUM_CHAPTERS.includes(cleanedChapterName);
+            
+            // --- FREE QUIZ LOGIC ---
+            if (!isPremiumQuiz) {
+                logQuizAttempt(user.uid, cleanedChapterName, "Access Granted (Free)");
+                navigateToQuiz(cleanedChapterName);
+                return;
+            }
+
+            // --- PREMIUM QUIZ LOGIC ---
+            try {
+                // Check Firestore for the 'hasPaid' flag
+                const userDocRef = db.collection('users').doc(user.uid);
+                const userDoc = await userDocRef.get();
+
+                if (userDoc.exists && userDoc.data().hasPaid === true) {
+                    // Access Granted
+                    logQuizAttempt(user.uid, cleanedChapterName, "Access Granted (Paid)");
+                    alert("Payment confirmed. Starting Premium Quiz!");
+                    navigateToQuiz(cleanedChapterName);
+                    return;
+                }
+
+                // Access denied, initiate payment
+                alert("This is a premium quiz. Initiating secure payment...");
+                
+                // Call the secure 'create-order' Edge Function
+                const token = await user.getIdToken(); 
+                
+                const response = await fetch(SUPABASE_URL + API_URL_CREATE_ORDER, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ amount: PAYMENT_AMOUNT_PAISE, currency: 'INR' })
+                });
+
+                if (!response.ok) {
+                    console.error('Error creating Razorpay order:', await response.text());
+                    alert("Could not initiate payment. Please check console.");
+                    return;
+                }
+
+                const orderData = await response.json();
+
+                // Open Razorpay Modal 
+                launchRazorpayModal(orderData.orderId, user.email, user.uid, cleanedChapterName);
+
+            } catch (error) {
+                console.error("Error during Premium Quiz check/payment:", error);
+                alert("An error occurred during quiz access check.");
+            }
+        }
+
+
+        // --- PAYMENT MODAL HANDLING ---
+
+        function launchRazorpayModal(order_id, userEmail, firebaseUid, quizName) {
+            const options = {
+                "key": RAZORPAY_KEY_ID, 
+                "amount": PAYMENT_AMOUNT_PAISE,
+                "currency": "INR",
+                "name": "CBSE Economics Portal",
+                "description": `Access for Premium Quizzes`,
+                "order_id": order_id, 
+                "handler": function (response) {
+                    alert("Payment initiated successfully! Access is being granted by our secure server. Please wait for the quiz to load...");
+                    listenForPaymentConfirmation(firebaseUid, quizName);
+                    logQuizAttempt(firebaseUid, quizName, `Payment Success: ${response.razorpay_payment_id}`);
+                },
+                "prefill": {
+                    "email": userEmail,
+                },
+                "theme": {
+                    "color": "#1a3e6a" 
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        alert("Payment window closed. Please complete the payment to access the quiz.");
+                    }
+                }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
+
+        // --- POST-PAYMENT ACCESS LISTENER ---
+
+        function listenForPaymentConfirmation(firebaseUid, quizName) {
+            const userDocRef = db.collection('users').doc(firebaseUid);
+            let quizStarted = false;
+
+            const unsubscribe = userDocRef.onSnapshot(doc => {
+                if (doc.exists && doc.data().hasPaid === true && !quizStarted) {
+                    quizStarted = true;
+                    alert("Access granted! Starting the quiz now.");
+                    unsubscribe(); 
+                    navigateToQuiz(quizName); 
+                }
+            }, error => {
+                console.error("Error listening for payment confirmation:", error);
+                unsubscribe();
+            });
+        }
+
+
+        // --- IDENTITY SYNC ---
+
+        async function syncProfile(user) {
+            const token = await user.getIdToken(); 
+            
+            const response = await fetch(SUPABASE_URL + API_URL_SYNC_USER, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    firebase_uid: user.uid, 
+                    email: user.email 
+                })
+            });
+
+            if (!response.ok) {
+                console.error('Error syncing user profile:', await response.text());
+            } else {
+                console.log('User profile synced with Supabase:', await response.json());
+            }
+        }
+
+
+        // --- GOOGLE SIGN-IN LOGIC ---
+
+        googleSignInBtn.addEventListener('click', async () => {
+            errorMessage.textContent = 'Signing in with Google...';
+            googleSignInBtn.disabled = true;
+
+            const provider = new firebase.auth.GoogleAuthProvider();
+
+            try {
+                const result = await auth.signInWithPopup(provider);
+                hideAuthModal(); 
+                await syncProfile(result.user); 
+                alert("Login successful and profile synced!");
+
+                // Resume pending quiz access attempt
+                if (sessionStorage.getItem('pendingQuiz')) {
+                    const pendingQuiz = sessionStorage.getItem('pendingQuiz');
+                    sessionStorage.removeItem('pendingQuiz');
+                    startQuiz(pendingQuiz);
+                }
+
+            } catch (error) {
+                console.error("Google Sign-In Error:", error);
+                let displayMessage = 'Sign-in failed. Check the console for details.';
+                if (error.code === 'auth/popup-closed-by-user') {
+                    displayMessage = 'Sign-in window closed by user.';
+                } else if (error.code === 'auth/cancelled-popup-request') {
+                    displayMessage = 'Sign-in was blocked by a previous attempt.';
+                } else {
+                    displayMessage = 'Google Sign-in failed: ' + error.message;
+                }
+                errorMessage.textContent = displayMessage;
+            } finally {
+                googleSignInBtn.disabled = false;
+            }
+        });
+
+
+        // --- LOGOUT & AUTH STATE ---
+
+        closeModalBtn.addEventListener('click', hideAuthModal);
+
+        logoutNavBtn.addEventListener('click', async () => {
+            try {
+                await auth.signOut();
+                alert("You have been logged out.");
+            } catch (error) {
+                console.error("Error signing out:", error);
+            }
+        });
+
+        auth.onAuthStateChanged((user) => {
+            updateAuthUI(user);
+        });
+
+
+        // --- QUIZ DATA & LOGIC ---
+        
+        const bookData = {
+            'Stats': [
+                { unit: 'UNIT 1: INTRODUCTION', chapters: ['1. Introduction'] },
+                { unit: 'UNIT 2: COLLECTION, ORGANISATION, AND PRESENTATION OF DATA', chapters: ['2. Collection of Data', '3. Organisation of Data', '4. Presentation of Data'] },
+                { unit: 'UNIT 3: STATISTICAL TOOLS AND INTERPRETATION', chapters: ['5. Measures of Central Tendency', '6. Measures of Dispersion', '7. Correlation', '8. Index Numbers', '9. Use of Statistical Tools (Project)'] }
+            ],
+            'Micro': [
+                { unit: 'UNIT 4: INTRODUCTION', chapters: ['1. Introduction'] },
+                { unit: 'UNIT 5: CONSUMER EQUILIBRIUM AND DEMAND', chapters: ['2. Consumer Equilibrium', '3. Demand', '4. Elasticity of Demand'] },
+                { unit: 'UNIT 6: PRODUCER BEHAVIOUR AND SUPPLY', chapters: ['5. Production Function', '6. Cost', '7. Revenue', '8. Producer\'s Equilibrium', '9. Supply'] },
+                { unit: 'UNIT 7: FORMS OF MARKET AND PRICE DETERMINATION UNDER PERFECT COMPETITION WITH SIMPLE APPLICATIONS', chapters: ['10. Main Market Forms', '11. Price Determination and Simple Applications'] },
+                { unit: 'REVISION SECTION', chapters: ['Important Questions', 'Value Based Questions', 'Case Based Questions (CBQs)', 'Last Minute Revision'] }
+            ],
+            'IED': [
+                { unit: 'UNIT 1: DEVELOPMENT POLICIES AND EXPERIENCE (1947–90)', chapters: ['1. Indian Economy on the Eve of Independence', '2. Indian Economy (1950–1990)', '3. Liberalisation, Privatisation and Globalisation: An Appraisal'] },
+                { unit: 'UNIT 2: CURRENT CHALLENGES FACING THE INDIAN ECONOMY', chapters: ['4. Human Capital Formation in India', '5. Rural Development', '6. Employment: Growth, Informalisation and Other Issues', '7. Infrastructure', '8. Environment and Sustainable Development'] },
+                { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
+            ]
+        };
+        
+        // --- QUIZ NAVIGATION (Direct Links to Working Quizzes) ---
+
+        function navigateToQuiz(chapterName) {
+            if (chapterName.includes('4. Elasticity of Demand')) {  
+                window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
+                return;
+            }
+
+            if (chapterName.includes("2. Consumer Equilibrium")) {  
+                window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
+                return;
+            }
+
+            if (chapterName.includes('3. Demand')) {  
+                window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
+                return;
+            }
+            
+             if (chapterName.includes('Master Quiz')) {  
+                 window.location.href = './quizzes/economics/master_quiz.html';
+                 return;
+             }
+            
+            alert(`Quiz not yet implemented for: ${chapterName}. Access status: ${PREMIUM_CHAPTERS.includes(chapterName) ? 'Premium Gated' : 'Free'}.`);
+        }
+        
+        function logQuizAttempt(userId, chapter, action) {
+            db.collection("quiz_attempts").add({
+                userId: userId,
+                chapter: chapter,
+                action: action,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            })
+            .catch(err => console.error("Error logging attempt:", err));
+        }
+
+
+        function showView(viewId) {
+            document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            document.getElementById(viewId + '-view').classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        function showUnits(bookKey, title, color) {
+            const units = bookData[bookKey];
+            
+            unitsViewTitle.textContent = title;
+            unitsViewTitle.style.borderColor = 'var(--tw-colors-' + color + ')';
+
+            let html = '';
+            units.forEach((unitItem, index) => {
+                const unitId = `${bookKey}-unit-${index}`;
+                
+                let chaptersHtml = unitItem.chapters.map((chapter) => {
+                    const isPremium = PREMIUM_CHAPTERS.includes(chapter);
+                    const chapterColor = isPremium ? 'border-accent-red' : `border-current`;
+
+                    return `
+                        <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 ${chapterColor} flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
+                            <span class="text-gray-700 font-medium">${chapter}</span>
+                            <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">
+                                Quiz
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+                html += `
+                    <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+                        <div class="unit-header bg-unit-bg p-4 flex justify-between items-center font-semibold text-gray-700 hover:bg-unit-bg/80 active" data-target="${unitId}">
+                            <span>${unitItem.unit}</span>
+                            <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
+                        </div>
+                        <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            ${chaptersHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            unitsList.innerHTML = html;
+            lucide.createIcons(); 
+            showView('units');
+            
+            attachEventListeners(); 
+            setTimeout(initAccordion, 50);  
+        }
+
+        function initAccordion() {
+            document.querySelectorAll('.unit-header').forEach(header => {
+                const content = document.getElementById(header.dataset.target);
+                if (content) {
+                    if (header.classList.contains('active')) {
+                        content.style.maxHeight = content.scrollHeight + "px";
+                    }
+                    
+                    header.removeEventListener('click', handleAccordionClick);
+                    header.addEventListener('click', handleAccordionClick);
+                }
+            });
+        }
+        
+        function handleAccordionClick(event) {
+            const header = event.currentTarget;
+            const content = document.getElementById(header.dataset.target);
+            
+            header.classList.toggle('active');
+            if (header.classList.contains('active')) {
+                content.style.maxHeight = content.scrollHeight + "px";
+            } else {
+                content.style.maxHeight = '0';
+            }
+        }
+
+        // --- ATTACH EVENT LISTENERS (Consolidated) ---
+
+        function attachEventListeners() {
+            // Quiz buttons are added dynamically, so we MUST re-attach listeners after rendering showUnits
+            document.querySelectorAll('.quiz-start-btn').forEach(button => {
+                button.removeEventListener('click', handleQuizButtonClick); 
+                button.addEventListener('click', handleQuizButtonClick);
+            });
+            
+            // Book cards are static, only attach once
+            document.querySelectorAll('.book-select-btn').forEach(card => {
+                if (!card.hasAttribute('data-listener-attached')) {
+                    card.addEventListener('click', handleBookSelectClick);
+                    card.setAttribute('data-listener-attached', 'true');
+                }
+            });
+        }
+
+        // --- Event Handlers that use Data Attributes ---
+
+        function handleQuizButtonClick(event) {
+            const chapterName = event.currentTarget.dataset.chapter;
+            startQuiz(chapterName);
+        }
+
+        function handleBookSelectClick(event) {
+            const card = event.currentTarget;
+            const book = card.dataset.book;
+            const title = card.dataset.title;
+            const color = card.dataset.color;
+            showUnits(book, title, color);
+        }
+        
+        // --- Initialization on Document Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
+            });
+
+            attachEventListeners();
+            
+            headerHomeBtn.addEventListener('click', () => showView('book-select'));
+            backToBooksBtn.addEventListener('click', () => showView('book-select'));
+        });
+        
+    </script>
+</body>
+</html>
