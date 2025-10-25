@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CBSE Class 11 Economics Curriculum</title>
+    <title>CBSE Class 11 Economics Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -25,7 +25,9 @@
         }
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script> 
     <style>
+        /* Styles remain unchanged */
         .book-card {
             transition: all 0.3s ease;
             cursor: pointer;
@@ -167,10 +169,27 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
+    
 
     <script>
-        // YOUR FIREBASE CONFIGURATION
+        // --- SECURE CONFIGURATION: Ensure these keys match your deployment ---
+        const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY';
+        const RAZORPAY_KEY_ID = 'rzp_live_RX9fC2dHEynIRr'; 
+        const PAYMENT_AMOUNT_PAISE = 50000; // ₹500.00 (CRITICAL: Must match server)
+        const API_URL_CREATE_ORDER = '/functions/v1/create-order'; 
+        const API_URL_SYNC_USER = '/functions/v1/sync-user'; 
+        
+        // PREMIUM QUIZ LIST: Only these chapters require payment
+        const PREMIUM_CHAPTERS = [
+            "2. Consumer Equilibrium",
+            "3. Demand",
+            "4. Elasticity of Demand",
+            "Master Quiz" // Full mock test is also premium
+        ];
+
+        // --- FIREBASE & SUPABASE INITIALIZATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
             authDomain: "quiz-signon.firebaseapp.com",
@@ -181,10 +200,10 @@
             measurementId: "G-4EFDM0CRYY"
         };
 
-        // Initialize Firebase App, Auth, and Firestore using the compatibility layer
         const app = firebase.initializeApp(firebaseConfig);
         const auth = app.auth(); 
         const db = app.firestore(); 
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let isUserLoggedIn = false; 
 
@@ -219,6 +238,154 @@
                 logoutNavBtn.classList.add('hidden');
             }
         }
+        
+        // --- CORE LOGIC: startQuiz (The Secure Access Gate) ---
+
+        async function startQuiz(chapterName) {
+            const user = auth.currentUser;
+            const cleanedChapterName = chapterName.trim();
+            
+            // 1. Authorization Check (Applies to ALL quizzes)
+            if (!user) {
+                // Save the attempted quiz to resume after login
+                sessionStorage.setItem('pendingQuiz', cleanedChapterName);
+                showAuthModal(); 
+                return;
+            }
+            
+            const isPremiumQuiz = PREMIUM_CHAPTERS.includes(cleanedChapterName);
+            
+            // --- FREE QUIZ LOGIC ---
+            if (!isPremiumQuiz) {
+                logQuizAttempt(user.uid, cleanedChapterName, "Access Granted (Free)");
+                navigateToQuiz(cleanedChapterName);
+                return;
+            }
+
+            // --- PREMIUM QUIZ LOGIC (Only for specified chapters) ---
+            try {
+                // Step 8: Check Firestore for the 'hasPaid' flag
+                const userDocRef = db.collection('users').doc(user.uid);
+                const userDoc = await userDocRef.get();
+
+                if (userDoc.exists && userDoc.data().hasPaid === true) {
+                    // Access Granted
+                    logQuizAttempt(user.uid, cleanedChapterName, "Access Granted (Paid)");
+                    alert("Payment confirmed. Starting Premium Quiz!");
+                    navigateToQuiz(cleanedChapterName);
+                    return;
+                }
+
+                // Access denied, initiate payment (Razorpay)
+                alert("This is a premium quiz. Initiating secure payment...");
+                
+                // Step 3: Call the secure 'create-order' Edge Function
+                const token = await user.getIdToken(); 
+                
+                const response = await fetch(SUPABASE_URL + API_URL_CREATE_ORDER, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ amount: PAYMENT_AMOUNT_PAISE, currency: 'INR' })
+                });
+
+                if (!response.ok) {
+                    console.error('Error creating Razorpay order:', await response.text());
+                    alert("Could not initiate payment. Please check console.");
+                    return;
+                }
+
+                const orderData = await response.json();
+
+                // Step 4: Open Razorpay Modal 
+                launchRazorpayModal(orderData.orderId, user.email, user.uid, cleanedChapterName);
+
+            } catch (error) {
+                console.error("Error during Premium Quiz check/payment:", error);
+                alert("An error occurred during quiz access check.");
+            }
+        }
+
+
+        // --- PAYMENT MODAL HANDLING (Step 4) ---
+
+        function launchRazorpayModal(order_id, userEmail, firebaseUid, quizName) {
+            const options = {
+                "key": RAZORPAY_KEY_ID, 
+                "amount": PAYMENT_AMOUNT_PAISE,
+                "currency": "INR",
+                "name": "CBSE Economics Portal",
+                "description": `Access for Premium Quizzes`,
+                "order_id": order_id, 
+                "handler": function (response) {
+                    // Success handler: Webhook handles the access grant.
+                    alert("Payment initiated successfully! Access is being granted by our secure server. Please wait for the quiz to load...");
+                    listenForPaymentConfirmation(firebaseUid, quizName);
+                    logQuizAttempt(firebaseUid, quizName, `Payment Success: ${response.razorpay_payment_id}`);
+                },
+                "prefill": {
+                    "email": userEmail,
+                },
+                "theme": {
+                    "color": "#1a3e6a" 
+                },
+                "modal": {
+                    "ondismiss": function() {
+                        alert("Payment window closed. Please complete the payment to access the quiz.");
+                    }
+                }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+        }
+
+        // --- POST-PAYMENT ACCESS LISTENER (Step 8: Instantaneous access) ---
+
+        function listenForPaymentConfirmation(firebaseUid, quizName) {
+            const userDocRef = db.collection('users').doc(firebaseUid);
+            let quizStarted = false;
+
+            const unsubscribe = userDocRef.onSnapshot(doc => {
+                if (doc.exists && doc.data().hasPaid === true && !quizStarted) {
+                    quizStarted = true;
+                    alert("Access granted! Starting the quiz now.");
+                    unsubscribe(); 
+                    navigateToQuiz(quizName); 
+                }
+            }, error => {
+                console.error("Error listening for payment confirmation:", error);
+                unsubscribe();
+            });
+        }
+
+
+        // --- IDENTITY SYNC (Step 2: Profile Sync) ---
+
+        async function syncProfile(user) {
+            const token = await user.getIdToken(); 
+            
+            const response = await fetch(SUPABASE_URL + API_URL_SYNC_USER, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    firebase_uid: user.uid, 
+                    email: user.email 
+                })
+            });
+
+            if (!response.ok) {
+                console.error('Error syncing user profile:', await response.text());
+            } else {
+                console.log('User profile synced with Supabase:', await response.json());
+            }
+        }
+
 
         // --- GOOGLE SIGN-IN LOGIC ---
 
@@ -229,13 +396,20 @@
             const provider = new firebase.auth.GoogleAuthProvider();
 
             try {
-                await auth.signInWithPopup(provider);
+                const result = await auth.signInWithPopup(provider);
                 hideAuthModal(); 
-                alert("Login successful! You can now access the quizzes."); 
+                await syncProfile(result.user); // CRITICAL: Run sync after successful login (Step 2)
+                alert("Login successful and profile synced!");
+
+                // Resume pending quiz access attempt
+                if (sessionStorage.getItem('pendingQuiz')) {
+                    const pendingQuiz = sessionStorage.getItem('pendingQuiz');
+                    sessionStorage.removeItem('pendingQuiz');
+                    startQuiz(pendingQuiz);
+                }
 
             } catch (error) {
-                console.error("Error signing in with Google:", error);
-                
+                console.error("Google Sign-In Error:", error);
                 let displayMessage = 'Sign-in failed. Check the console for details.';
                 if (error.code === 'auth/popup-closed-by-user') {
                     displayMessage = 'Sign-in window closed by user.';
@@ -244,7 +418,6 @@
                 } else {
                     displayMessage = 'Google Sign-in failed: ' + error.message;
                 }
-
                 errorMessage.textContent = displayMessage;
             } finally {
                  googleSignInBtn.disabled = false;
@@ -269,6 +442,7 @@
             updateAuthUI(user);
         });
 
+
         // --- QUIZ DATA & LOGIC ---
         
         const bookData = {
@@ -290,54 +464,47 @@
                 { unit: 'UNIT 3: DEVELOPMENT EXPERIENCES OF INDIA: A COMPARISON WITH NEIGHBOURS', chapters: ['9. Comparative Development Experiences of India and its Neighbours'] }
             ]
         };
+        
+        // --- QUIZ NAVIGATION (Updated to reflect implemented quizzes) ---
 
-        function startQuiz(chapterName) {
-            const user = auth.currentUser;
-            
-            if (!user) {
-                showAuthModal();
-                return; 
-            }
-            
-            const cleanedChapterName = chapterName.trim();
-            
-            // --- LOG THE ATTEMPT TO FIRESTORE (Quiz Start) ---
-            db.collection("quiz_attempts").add({
-                userId: user.uid,
-                email: user.email || 'N/A', 
-                chapter: cleanedChapterName,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(), 
-                action: 'Quiz Attempted'
-            })
-            .then(() => {
-                console.log("Quiz attempt logged successfully for:", cleanedChapterName);
-            })
-            .catch((error) => {
-                console.error("Error logging quiz attempt (Check Firestore Rules!): ", error);
-            });
-            // --- END LOGIC ---
-            
-            // Existing Quiz Navigation Logic
-            if (cleanedChapterName.includes('4. Elasticity of Demand')) {  
+        function navigateToQuiz(chapterName) {
+            // Updated to use the paths for the three implemented quizzes
+            if (chapterName.includes('4. Elasticity of Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
                 return;
             }
 
-            if (cleanedChapterName.includes("2. Consumer Equilibrium")) {  
+            if (chapterName.includes("2. Consumer Equilibrium")) {  
                 window.location.href = './quizzes/economics/microeconomics/equilibrium/equilibrium_quiz.html';
                 return;
             }
 
-            if (cleanedChapterName.includes('3. Demand')) {  
+            if (chapterName.includes('3. Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/demand/demand_quiz.html';
                 return;
             }
             
+             if (chapterName.includes('Master Quiz')) {  
+                 window.location.href = './quizzes/economics/master_quiz.html';
+                 return;
+             }
+            
             // Default alert for unimplemented quizzes
-            const urlSafeName = cleanedChapterName.replace(/[^\w\s]/g, '').replace(/\s+/g, '-').toLowerCase();
-            alert(`Quiz not yet implemented for: ${cleanedChapterName}! (You are logged in) Target URL: /quizzes/${urlSafeName}.html`);
+            alert(`Quiz not yet implemented for: ${chapterName}. Access is free, but the page is unavailable.`);
         }
         
+        function logQuizAttempt(userId, chapter, action) {
+            // Log the attempt to Firestore
+            db.collection("quiz_attempts").add({
+                userId: userId,
+                chapter: chapter,
+                action: action,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            })
+            .catch(err => console.error("Error logging attempt:", err));
+        }
+
+
         function showView(viewId) {
             document.querySelectorAll('#quiz-content-wrapper .view').forEach(view => {
                 view.classList.add('hidden');
@@ -356,12 +523,20 @@
             units.forEach((unitItem, index) => {
                 const unitId = `${bookKey}-unit-${index}`;
                 
-                let chaptersHtml = unitItem.chapters.map((chapter) => `
-                    <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 border-current flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
-                        <span class="text-gray-700 font-medium">${chapter}</span>
-                        <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">Quiz</button>
-                    </div>
-                `).join('');
+                let chaptersHtml = unitItem.chapters.map((chapter) => {
+                    // Highlight premium chapters with a different color/icon if needed
+                    const isPremium = PREMIUM_CHAPTERS.includes(chapter);
+                    const chapterColor = isPremium ? 'border-accent-red' : `border-current`;
+
+                    return `
+                        <div class="chapter-card bg-white p-4 rounded-lg shadow border-l-2 ${chapterColor} flex justify-between items-center" style="border-color: var(--tw-colors-${color});">
+                            <span class="text-gray-700 font-medium">${chapter}</span>
+                            <button class="quiz-btn bg-cbse-blue text-white px-3 py-1 text-sm rounded-md hover:bg-cbse-blue/90 transition quiz-start-btn" data-chapter="${chapter.replace(/'/g, '\\\'')}">
+                                Quiz
+                            </button>
+                        </div>
+                    `;
+                }).join('');
 
                 html += `
                     <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
@@ -381,7 +556,8 @@
             showView('units');
             
             attachEventListeners(); 
-            setTimeout(initAccordion, 10);  
+            // CRITICAL FIX: Ensures accordion height is calculated after DOM is updated
+            setTimeout(initAccordion, 50);  
         }
 
         function initAccordion() {
