@@ -14,7 +14,7 @@
                     },
                     colors: {
                         'cbse-blue': '#1a3e6a', 
-                        'cbse-light': '#f0ff8', 
+                        'cbse-light': '#f0f4f8', 
                         'accent-green': '#059669', 
                         'accent-red': '#dc2626', 
                         'accent-orange': '#ea580c', 
@@ -172,7 +172,7 @@
     
 
     <script>
-        // --- SECURE CONFIGURATION: Ensure these keys match your deployment ---
+        // --- SECURE CONFIGURATION ---
         const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY';
         const RAZORPAY_KEY_ID = 'rzp_live_RX9fC2dHEynIRr'; 
@@ -180,7 +180,7 @@
         const API_URL_CREATE_ORDER = '/functions/v1/create-order'; 
         const API_URL_SYNC_USER = '/functions/v1/sync-user'; 
         
-        // PREMIUM QUIZ LIST: Only these chapters require payment for Introductory Microeconomics
+        // PREMIUM QUIZ LIST: Only these chapters require payment
         const PREMIUM_CHAPTERS = [
             "2. Consumer Equilibrium",
             "3. Demand",
@@ -203,7 +203,7 @@
         const auth = app.auth(); 
         const db = app.firestore(); 
         
-        // FIX: Supabase client is initialized here, AFTER the SDK script tag has loaded.
+        // FIX: This line now executes after the Supabase SDK is loaded, resolving the ReferenceError.
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let isUserLoggedIn = false; 
@@ -248,7 +248,6 @@
             
             // 1. Authorization Check (Applies to ALL quizzes)
             if (!user) {
-                // Save the attempted quiz to resume after login
                 sessionStorage.setItem('pendingQuiz', cleanedChapterName);
                 showAuthModal(); 
                 return;
@@ -263,7 +262,7 @@
                 return;
             }
 
-            // --- PREMIUM QUIZ LOGIC (Only for specified chapters) ---
+            // --- PREMIUM QUIZ LOGIC ---
             try {
                 // Check Firestore for the 'hasPaid' flag
                 const userDocRef = db.collection('users').doc(user.uid);
@@ -277,7 +276,7 @@
                     return;
                 }
 
-                // Access denied, initiate payment (Razorpay)
+                // Access denied, initiate payment
                 alert("This is a premium quiz. Initiating secure payment...");
                 
                 // Call the secure 'create-order' Edge Function
@@ -321,7 +320,6 @@
                 "description": `Access for Premium Quizzes`,
                 "order_id": order_id, 
                 "handler": function (response) {
-                    // Success handler: Webhook handles the access grant.
                     alert("Payment initiated successfully! Access is being granted by our secure server. Please wait for the quiz to load...");
                     listenForPaymentConfirmation(firebaseUid, quizName);
                     logQuizAttempt(firebaseUid, quizName, `Payment Success: ${response.razorpay_payment_id}`);
@@ -489,7 +487,6 @@
                  return;
              }
             
-            // Default alert for unimplemented (free or paid) quizzes
             alert(`Quiz not yet implemented for: ${chapterName}. Access status: ${PREMIUM_CHAPTERS.includes(chapterName) ? 'Premium Gated' : 'Free'}.`);
         }
         
