@@ -27,7 +27,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script> 
     <style>
-        /* Styles remain unchanged */
         .book-card {
             transition: all 0.3s ease;
             cursor: pointer;
@@ -177,16 +176,16 @@
         const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY';
         const RAZORPAY_KEY_ID = 'rzp_live_RX9fC2dHEynIRr'; 
-        const PAYMENT_AMOUNT_PAISE = 50000; // ₹500.00 (CRITICAL: Must match server)
+        const PAYMENT_AMOUNT_PAISE = 50000; // ₹500.00
         const API_URL_CREATE_ORDER = '/functions/v1/create-order'; 
         const API_URL_SYNC_USER = '/functions/v1/sync-user'; 
         
-        // PREMIUM QUIZ LIST: Only these chapters require payment
+        // PREMIUM QUIZ LIST: Only these chapters require payment for Introductory Microeconomics
         const PREMIUM_CHAPTERS = [
             "2. Consumer Equilibrium",
             "3. Demand",
             "4. Elasticity of Demand",
-            "Master Quiz" // Full mock test is also premium
+            "Master Quiz" 
         ];
 
         // --- FIREBASE & SUPABASE INITIALIZATION ---
@@ -203,6 +202,8 @@
         const app = firebase.initializeApp(firebaseConfig);
         const auth = app.auth(); 
         const db = app.firestore(); 
+        
+        // FIX: Supabase client is initialized here, AFTER the SDK script tag has loaded.
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         let isUserLoggedIn = false; 
@@ -264,7 +265,7 @@
 
             // --- PREMIUM QUIZ LOGIC (Only for specified chapters) ---
             try {
-                // Step 8: Check Firestore for the 'hasPaid' flag
+                // Check Firestore for the 'hasPaid' flag
                 const userDocRef = db.collection('users').doc(user.uid);
                 const userDoc = await userDocRef.get();
 
@@ -279,7 +280,7 @@
                 // Access denied, initiate payment (Razorpay)
                 alert("This is a premium quiz. Initiating secure payment...");
                 
-                // Step 3: Call the secure 'create-order' Edge Function
+                // Call the secure 'create-order' Edge Function
                 const token = await user.getIdToken(); 
                 
                 const response = await fetch(SUPABASE_URL + API_URL_CREATE_ORDER, {
@@ -299,7 +300,7 @@
 
                 const orderData = await response.json();
 
-                // Step 4: Open Razorpay Modal 
+                // Open Razorpay Modal 
                 launchRazorpayModal(orderData.orderId, user.email, user.uid, cleanedChapterName);
 
             } catch (error) {
@@ -309,7 +310,7 @@
         }
 
 
-        // --- PAYMENT MODAL HANDLING (Step 4) ---
+        // --- PAYMENT MODAL HANDLING ---
 
         function launchRazorpayModal(order_id, userEmail, firebaseUid, quizName) {
             const options = {
@@ -342,7 +343,7 @@
             rzp.open();
         }
 
-        // --- POST-PAYMENT ACCESS LISTENER (Step 8: Instantaneous access) ---
+        // --- POST-PAYMENT ACCESS LISTENER ---
 
         function listenForPaymentConfirmation(firebaseUid, quizName) {
             const userDocRef = db.collection('users').doc(firebaseUid);
@@ -362,7 +363,7 @@
         }
 
 
-        // --- IDENTITY SYNC (Step 2: Profile Sync) ---
+        // --- IDENTITY SYNC ---
 
         async function syncProfile(user) {
             const token = await user.getIdToken(); 
@@ -398,7 +399,7 @@
             try {
                 const result = await auth.signInWithPopup(provider);
                 hideAuthModal(); 
-                await syncProfile(result.user); // CRITICAL: Run sync after successful login (Step 2)
+                await syncProfile(result.user); 
                 alert("Login successful and profile synced!");
 
                 // Resume pending quiz access attempt
@@ -465,10 +466,10 @@
             ]
         };
         
-        // --- QUIZ NAVIGATION (Updated to reflect implemented quizzes) ---
+        // --- QUIZ NAVIGATION (Direct Links to Working Quizzes) ---
 
         function navigateToQuiz(chapterName) {
-            // Updated to use the paths for the three implemented quizzes
+            // These are the three working chapters requiring payment
             if (chapterName.includes('4. Elasticity of Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
                 return;
@@ -489,12 +490,11 @@
                  return;
              }
             
-            // Default alert for unimplemented quizzes
-            alert(`Quiz not yet implemented for: ${chapterName}. Access is free, but the page is unavailable.`);
+            // Default alert for unimplemented (free or paid) quizzes
+            alert(`Quiz not yet implemented for: ${chapterName}. Access status: ${PREMIUM_CHAPTERS.includes(chapterName) ? 'Premium Gated' : 'Free'}.`);
         }
         
         function logQuizAttempt(userId, chapter, action) {
-            // Log the attempt to Firestore
             db.collection("quiz_attempts").add({
                 userId: userId,
                 chapter: chapter,
@@ -524,7 +524,6 @@
                 const unitId = `${bookKey}-unit-${index}`;
                 
                 let chaptersHtml = unitItem.chapters.map((chapter) => {
-                    // Highlight premium chapters with a different color/icon if needed
                     const isPremium = PREMIUM_CHAPTERS.includes(chapter);
                     const chapterColor = isPremium ? 'border-accent-red' : `border-current`;
 
@@ -556,7 +555,7 @@
             showView('units');
             
             attachEventListeners(); 
-            // CRITICAL FIX: Ensures accordion height is calculated after DOM is updated
+            // Ensures accordion height is calculated after DOM is updated
             setTimeout(initAccordion, 50);  
         }
 
