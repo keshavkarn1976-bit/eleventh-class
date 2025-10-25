@@ -67,11 +67,12 @@
         const db = app.firestore(); 
         
         // Supabase client is initialized here.
-        // ✅ FIX: Renamed variable to supabaseClient to resolve ReferenceError
+        // Critical Fix is maintained: Renamed variable to supabaseClient to resolve ReferenceError
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
     
     <style>
+        /* Existing styles */
         .book-card {
             transition: all 0.3s ease;
             cursor: pointer;
@@ -121,6 +122,14 @@
             align-items: center;
             z-index: 50;
         }
+        /* NEW/MODIFIED STYLES FOR ALIGNMENT REVERSION */
+        .chapter-list-reverted {
+            /* This mimics a basic, single-column flow with padding */
+            display: flex;
+            flex-direction: column;
+            gap: 1rem; /* Space between cards */
+            padding: 1rem;
+        }
     </style>
 </head>
 <body class="bg-cbse-light min-h-screen antialiased">
@@ -253,6 +262,7 @@
             
             // 1. Authorization Check (Applies to ALL quizzes)
             if (!user) {
+                // Save the attempted quiz name so we can resume after login
                 sessionStorage.setItem('pendingQuiz', cleanedChapterName);
                 showAuthModal(); 
                 return;
@@ -309,7 +319,7 @@
 
             } catch (error) {
                 console.error("Error during Premium Quiz check/payment:", error);
-                alert("An error occurred during quiz access check.");
+                alert("An error occurred during quiz access check. Check the console for full details.");
             }
         }
 
@@ -375,6 +385,7 @@
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
+                    // IMPORTANT: The function needs to be secured with the Firebase JWT
                     'Authorization': `Bearer ${token}` 
                 },
                 body: JSON.stringify({ 
@@ -402,6 +413,7 @@
             try {
                 const result = await auth.signInWithPopup(provider);
                 hideAuthModal(); 
+                // Critical Step: Sync profile after successful login
                 await syncProfile(result.user); 
                 alert("Login successful and profile synced!");
 
@@ -544,7 +556,7 @@
                             <span>${unitItem.unit}</span>
                             <span data-lucide="chevron-down" class="icon-rotate w-5 h-5 transition-transform duration-300"></span>
                         </div>
-                        <div id="${unitId}" class="unit-content p-4 grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                                                <div id="${unitId}" class="unit-content chapter-list-reverted">
                             ${chaptersHtml}
                         </div>
                     </div>
@@ -607,6 +619,7 @@
 
         function handleQuizButtonClick(event) {
             const chapterName = event.currentTarget.dataset.chapter;
+            // This is the call that initiates the whole secure process
             startQuiz(chapterName);
         }
 
