@@ -170,17 +170,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> 
     
-
     <script>
-        // --- SECURE CONFIGURATION ---
+        // --- SECURE CONFIGURATION (Global Constants) ---
         const SUPABASE_URL = 'https://wpkbdxixzyrixkrkrqpr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indwa2JkeGl4enlyaXhrcmtycXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyNDc1MjcsImV4cCI6MjA3NjgyMzUyN30.9rXdcMIOscjSBDr5QEo0C5-OITR2o8plotgxYCwebrY';
         const RAZORPAY_KEY_ID = 'rzp_live_RX9fC2dHEynIRr'; 
-        const PAYMENT_AMOUNT_PAISE = 50000; // ₹500.00
+        const PAYMENT_AMOUNT_PAISE = 50000;
         const API_URL_CREATE_ORDER = '/functions/v1/create-order'; 
         const API_URL_SYNC_USER = '/functions/v1/sync-user'; 
         
-        // PREMIUM QUIZ LIST: Only these chapters require payment
+        // PREMIUM QUIZ LIST
         const PREMIUM_CHAPTERS = [
             "2. Consumer Equilibrium",
             "3. Demand",
@@ -188,7 +187,7 @@
             "Master Quiz" 
         ];
 
-        // --- FIREBASE & SUPABASE INITIALIZATION ---
+        // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyAXdKiYRxBKAj280YcNuNwlKKDp85xpOWQ",
             authDomain: "quiz-signon.firebaseapp.com",
@@ -203,9 +202,13 @@
         const auth = app.auth(); 
         const db = app.firestore(); 
         
-        // FIX: This line now executes after the Supabase SDK is loaded, resolving the ReferenceError.
+        // FIX: Supabase client is initialized IMMEDIATELY here.
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        
+    </script>
+    
+
+    <script>
+        // The main script starts here, using the globally defined 'supabase' variable.
         let isUserLoggedIn = false; 
 
         // --- DOM Elements ---
@@ -599,31 +602,4 @@
         // --- Event Handlers that use Data Attributes ---
 
         function handleQuizButtonClick(event) {
-            const chapterName = event.currentTarget.dataset.chapter;
-            startQuiz(chapterName);
-        }
-
-        function handleBookSelectClick(event) {
-            const card = event.currentTarget;
-            const book = card.dataset.book;
-            const title = card.dataset.title;
-            const color = card.dataset.color;
-            showUnits(book, title, color);
-        }
-        
-        // --- Initialization on Document Load ---
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.add('px-3', 'py-1', 'rounded-lg', 'text-gray-600', 'hover:bg-cbse-light', 'hover:text-cbse-blue', 'transition');
-            });
-
-            attachEventListeners();
-            
-            headerHomeBtn.addEventListener('click', () => showView('book-select'));
-            backToBooksBtn.addEventListener('click', () => showView('book-select'));
-        });
-        
-    </script>
-</body>
-</html>
+            const
