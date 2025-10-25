@@ -66,8 +66,7 @@
         const auth = app.auth(); 
         const db = app.firestore(); 
         
-        // Supabase client is initialized here.
-        // FIX: Changed 'const supabase' to 'const supabaseClient' to resolve the ReferenceError.
+        // Supabase client initialization (Previously fixed)
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     </script>
     
@@ -285,7 +284,8 @@
                 alert("This is a premium quiz. Initiating secure payment...");
                 
                 // Call the secure 'create-order' Edge Function
-                const token = await user.getIdToken(); 
+                // FIX: Force token refresh (true) to solve the "Invalid JWT" 401 error after login.
+                const token = await user.getIdToken(true); 
                 
                 const response = await fetch(SUPABASE_URL + API_URL_CREATE_ORDER, {
                     method: 'POST',
@@ -409,6 +409,7 @@
                 if (sessionStorage.getItem('pendingQuiz')) {
                     const pendingQuiz = sessionStorage.getItem('pendingQuiz');
                     sessionStorage.removeItem('pendingQuiz');
+                    // Use the original startQuiz which now has the token refresh fix
                     startQuiz(pendingQuiz);
                 }
 
