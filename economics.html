@@ -14,7 +14,7 @@
                     },
                     colors: {
                         'cbse-blue': '#1a3e6a', 
-                        'cbse-light': '#f0f4f8', 
+                        'cbse-light': '#f0ff8', 
                         'accent-green': '#059669', 
                         'accent-red': '#dc2626', 
                         'accent-orange': '#ea580c', 
@@ -469,7 +469,6 @@
         // --- QUIZ NAVIGATION (Direct Links to Working Quizzes) ---
 
         function navigateToQuiz(chapterName) {
-            // These are the three working chapters requiring payment
             if (chapterName.includes('4. Elasticity of Demand')) {  
                 window.location.href = './quizzes/economics/microeconomics/elasticity/elasticity_quiz.html';
                 return;
@@ -555,7 +554,6 @@
             showView('units');
             
             attachEventListeners(); 
-            // Ensures accordion height is calculated after DOM is updated
             setTimeout(initAccordion, 50);  
         }
 
