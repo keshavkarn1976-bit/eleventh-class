@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CBSE Class 9 — Academic Study Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                    },
+                    colors: {
+                        'cbse-blue': '#1a3e6a', 
+                        'cbse-light': '#f5f7fa',
+                        'accent-gold': '#ffb703',
+                        'heading': '#0f172a',
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Merriweather:wght@400;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .subject-card {
+            /* Card styling for the subjects */
+            @apply block p-6 rounded-xl bg-white border border-gray-200 shadow-lg transition-all duration-300 relative overflow-hidden;
+        }
+        .subject-card:hover {
+            transform: translateY(-5px);
+            @apply shadow-2xl border-cbse-blue/50;
+        }
+        .card-header {
+            @apply flex items-center space-x-4 mb-4;
+        }
+        .card-title {
+            @apply text-xl font-extrabold text-heading;
+        }
+        .card-description {
+            @apply text-gray-600 text-sm;
+        }
+        .card-button {
+            @apply px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-200;
+        }
+        .science { @apply bg-green-600 hover:bg-green-700 text-white; }
+        .social { @apply bg-red-600 hover:bg-red-700 text-white; }
+        .math { @apply bg-purple-600 hover:bg-purple-700 text-white; }
+    </style>
+</head>
+<body class="bg-cbse-light min-h-screen flex flex-col">
+
+    <header class="bg-cbse-blue shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-extrabold text-accent-gold tracking-wider">
+                Ready4<span class="text-white">Exam</span> Portal
+            </h1>
+            <nav id="auth-nav-container">
+                <button id="login-btn" class="px-4 py-2 text-sm font-semibold rounded-lg bg-white text-cbse-blue hover:bg-gray-100 transition">
+                    Sign In
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header class="text-center mb-12">
+            <h2 class="text-4xl font-extrabold text-heading mb-2">CBSE Class 9 Syllabus</h2>
+            <p class="text-lg text-gray-600">Select a Subject to begin your chapter-wise practice quizzes.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <a href="chapter-selection.html?class=9&subject=Science" class="subject-card" data-subject="Science">
+                <div class="card-header">
+                    <i data-lucide="flask-conical" class="text-green-700 h-8 w-8"></i>
+                    <h3 class="card-title">Science</h3>
+                </div>
+                <p class="card-description">Physics, Chemistry, and Biology — Core concepts from Motion to Sound, and the structure of life.</p>
+                <div class="mt-6 text-center">
+                    <button class="card-button science">
+                        Start Learning
+                    </button>
+                </div>
+            </a>
+
+            <a href="chapter-selection.html?class=9&subject=Social_Science" class="subject-card" data-subject="Social_Science">
+                <div class="card-header">
+                    <i data-lucide="landmark" class="text-red-700 h-8 w-8"></i>
+                    <h3 class="card-title">Social Science</h3>
+                </div>
+                <p class="card-description">History, Geography, Political Science, and Economics — Comprehending our nation and physical features of India.</p>
+                <div class="mt-6 text-center">
+                    <button class="card-button social">
+                        Start Learning
+                    </button>
+                </div>
+            </a>
+
+            <a href="chapter-selection.html?class=9&subject=Mathematics" class="subject-card" data-subject="Mathematics">
+                <div class="card-header">
+                    <i data-lucide="atom" class="text-purple-700 h-8 w-8"></i>
+                    <h3 class="card-title">Mathematics</h3>
+                </div>
+                <p class="card-description">Detailed study of Number Systems, Polynomials, Geometry, and Heron's Formula for foundational clarity.</p>
+                <div class="mt-6 text-center">
+                    <button class="card-button math">
+                        Start Learning
+                    </button>
+                </div>
+            </a>
+            
+             <a href="chapter-selection.html?class=9&subject=Hindi" class="subject-card" data-subject="Hindi">
+                <div class="card-header">
+                    <i data-lucide="book-open" class="text-blue-700 h-8 w-8"></i>
+                    <h3 class="card-title">Hindi / Sanskrit</h3>
+                </div>
+                <p class="card-description">Literature and Grammar practice for Hindi A/B or Sanskrit (placeholder).</p>
+                <div class="mt-6 text-center">
+                    <button class="card-button" style="background-color: #0077b6; color: white;">
+                        Start Learning
+                    </button>
+                </div>
+            </a>
+            
+             <a href="chapter-selection.html?class=9&subject=English" class="subject-card" data-subject="English">
+                <div class="card-header">
+                    <i data-lucide="globe" class="text-yellow-700 h-8 w-8"></i>
+                    <h3 class="card-title">English Language & Lit</h3>
+                </div>
+                <p class="card-description">Practice for Literature, Grammar, and Composition topics (placeholder).</p>
+                <div class="mt-6 text-center">
+                    <button class="card-button" style="background-color: #ffc300; color: #1a3e6a;">
+                        Start Learning
+                    </button>
+                </div>
+            </a>
+        </div>
+
+    </main>
+
+    <footer class="bg-cbse-blue mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+            <small class="text-sm opacity-70 block mt-2">© 2025 Ready4Exam Academic Portal. All Rights Reserved.</small>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize Lucide icons
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
