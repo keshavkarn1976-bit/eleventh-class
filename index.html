@@ -1,187 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8" />
+  <head>
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CBSE Class 11 — Academic Study Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    // Using a serif font (Merriweather) for headings to look more academic
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        serif: ['Merriweather', 'serif'], 
-                    },
-                    colors: {
-                        'cbse-blue': '#1a3e6a', // Deep Academic Blue
-                        'cbse-light': '#f5f7fa', // Very light off-white background
-                        'accent-gold': '#ffb703', // Professional accent color
-                        'heading': '#0f172a', // Slate-900 for primary text
-                    }
-                }
-            }
-        }
-    </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <style>
-        .subject-card {
-            /* Group for hover effects */
-            @apply block p-6 rounded-lg bg-white border border-gray-200 shadow-md transition-all duration-300;
-        }
-        .subject-card:hover {
-            /* Subtle academic lift on hover */
-            background-color: theme('colors.cbse-blue'); 
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            transform: translateY(-4px); 
-        }
-        .card-title {
-            @apply text-xl font-bold font-serif text-heading group-hover:text-white transition-colors;
-        }
-        .card-description {
-            @apply text-sm text-gray-600 mt-2 mb-4 group-hover:text-gray-200 transition-colors;
-        }
-        .card-link {
-            /* More formal link presentation */
-            @apply inline-block text-sm font-semibold text-accent-gold group-hover:text-white transition-colors;
-        }
-        .nav-link {
-             @apply px-4 py-2 rounded-lg text-gray-700 font-medium hover:bg-cbse-light hover:text-cbse-blue transition;
-        }
-        
-        /* Class to visually and functionally disable links */
-        .protected-link {
-            pointer-events: none;
-            cursor: not-allowed;
-            opacity: 0.6; /* Reduced opacity for a 'locked' look */
-        }
-        .protected-link:hover {
-             /* Preserve neutral look on hover when protected */
-            transform: none; 
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            background-color: white; 
-        }
-        .protected-link .card-title,
-        .protected-link .card-description,
-        .protected-link .card-link {
-            color: theme('colors.gray.600') !important;
-        }
-    </style>
-</head>
-<body class="bg-cbse-light min-h-screen antialiased font-sans">
-
-    <header class="bg-white shadow-lg sticky top-0 z-10 border-t-8 border-cbse-blue">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center space-x-3 mb-4 md:mb-0">
-                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1a3e6a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-check">
-                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>
-                    <path d="m9 10 2 2 4-4"/>
-                </svg>
-                <h1 class="text-3xl font-extrabold font-serif text-cbse-blue tracking-tight">
-                    CBSE Class 11 Academic Portal
-                </h1>
-            </div>
-            
-            <nav id="main-nav" class="flex flex-wrap justify-center md:justify-end space-x-1 sm:space-x-4 text-sm font-medium">
-                <a href="english.html" class="nav-link protected-link">English</a>
-                <a href="accountancy.html" class="nav-link protected-link">Accountancy</a>
-                <a href="business.html" class="nav-link protected-link">Business Studies</a>
-                <a href="economics.html" class="nav-link">Economics</a> <a href="mathematics.html" class="nav-link protected-link">Mathematics</a>
-            </nav>
-        </div>
+    <title>Ready4Exam – Class 11</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  </head>
+  <body class="bg-gray-50 text-gray-900 flex flex-col items-center justify-center min-h-screen">
+    <header class="text-center mb-8">
+      <h1 class="text-3xl font-bold">Ready4Exam – Class 11</h1>
+      <p class="text-gray-600 mt-2">Helping students excel in school exams — a learning initiative by Ready4Industry</p>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <section class="text-center mb-16">
-            <h2 class="text-5xl font-extrabold font-serif text-heading mb-4">
-                Structured Learning for Academic Excellence
-            </h2>
-            <p class="text-xl text-gray-700 max-w-4xl mx-auto leading-relaxed">
-                Access professional, chapter-wise resources, practice questions, and timed assessments designed specifically for the CBSE Class 11 curriculum.
-            </p>
-            <p class="text-lg font-semibold text-gray-500 mt-6">
-                 Note: All modules require user authentication for content access.
-            </p>
-        </section>
+    <main class="w-full max-w-lg bg-white rounded-2xl shadow-md p-6">
+      <!-- Stream selection -->
+      <label for="stream" class="block text-lg font-semibold mb-2">Select Your Stream:</label>
+      <select id="stream" class="w-full p-3 border rounded-lg mb-4">
+        <option value="">-- Choose Stream --</option>
+        <option value="science">Science</option>
+        <option value="commerce">Commerce</option>
+        <option value="arts">Arts (Humanities)</option>
+      </select>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            
-            <a class="subject-card group" href="economics.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="line-chart" class="text-accent-gold group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Economics</h3>
-                </div>
-                <p class="card-description">Comprehensive chapters, detailed notes, and focused quiz sets, including the 'Demand' chapter module.</p>
-                <span class="card-link">Access Module &rarr;</span>
-            </a>
+      <!-- Subject selection -->
+      <div id="subject-section" class="hidden">
+        <label for="subject" class="block text-lg font-semibold mb-2">Select Your Subject:</label>
+        <select id="subject" class="w-full p-3 border rounded-lg mb-4"></select>
 
-            <a class="subject-card group protected-link" href="accountancy.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="calculator" class="text-cbse-blue group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Accountancy</h3>
-                </div>
-                <p class="card-description">Practice numerical problems, understand debit/credit rules, and test your conceptual knowledge on core principles.</p>
-                <span class="card-link">Access Module &rarr;</span>
-            </a>
-
-            <a class="subject-card group protected-link" href="business.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="briefcase" class="text-red-700 group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Business Studies</h3>
-                </div>
-                <p class="card-description">Master key concepts, case studies, and functional areas of business, commerce, and organizational management.</p>
-                <span class="card-link">Access Module &rarr;</span>
-            </a>
-
-            <a class="subject-card group protected-link" href="mathematics.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="square-root" class="text-purple-700 group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Mathematics</h3>
-                </div>
-                <p class="card-description">Chapter-wise practice modules for sets, relations, foundational calculus, and applied statistics for the commerce stream.</p>
-                <span class="card-link">Access Module &rarr;</span>
-            </a>
-
-            <a class="subject-card group protected-link" href="english.html">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="book-open-text" class="text-orange-700 group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">English</h3>
-                </div>
-                <p class="card-description">Grammar assessments, advanced reading comprehension, and literature analysis tools for text-based study.</p>
-                <span class="card-link">Access Module &rarr;</span>
-            </a>
-
-            <a class="subject-card group protected-link opacity-80" href="#">
-                <div class="flex items-center space-x-3 mb-2">
-                    <i data-lucide="library" class="text-gray-400 group-hover:text-white transition-colors h-6 w-6"></i>
-                    <h3 class="card-title">Supplementary Resources</h3>
-                </div>
-                <p class="card-description">Study schedules, examination guidelines, and curated external academic references.</p>
-                <span class="card-link">Access Resources &rarr;</span>
-            </a>
-
-        </div>
+        <button id="continueBtn" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700">
+          Continue
+        </button>
+      </div>
     </main>
 
-    <footer class="bg-cbse-blue mt-16 py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
-            <div class="flex justify-center space-x-6 mb-3">
-                 <a href="#" class="text-sm opacity-90 hover:opacity-100 transition border-b border-cbse-blue hover:border-white">Terms of Use</a>
-                <a href="#" class="text-sm opacity-90 hover:opacity-100 transition border-b border-cbse-blue hover:border-white">Privacy Policy</a>
-                <a href="#" class="text-sm opacity-90 hover:opacity-100 transition border-b border-cbse-blue hover:border-white">Contact Administration</a>
-            </div>
-            <small class="text-sm opacity-70 block mt-2">© 2025 CBSE Class 11 Academic Portal. All Rights Reserved. Dedicated to Student Success.</small>
-        </div>
-    </footer>
-
     <script>
-        // Initialize Lucide icons
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-        });
+      const streamSelect = document.getElementById('stream');
+      const subjectSelect = document.getElementById('subject');
+      const subjectSection = document.getElementById('subject-section');
+      const continueBtn = document.getElementById('continueBtn');
+
+      const subjects = {
+        science: [
+          { name: 'Physics', code: 'physics' },
+          { name: 'Chemistry', code: 'chemistry' },
+          { name: 'Mathematics', code: 'maths' },
+          { name: 'Biology', code: 'biology' }
+        ],
+        commerce: [
+          { name: 'Accountancy', code: 'accountancy' },
+          { name: 'Business Studies', code: 'business_studies' },
+          { name: 'Economics', code: 'economics' },
+          { name: 'Mathematics (Optional)', code: 'commerce_maths' }
+        ],
+        arts: [
+          { name: 'History', code: 'history' },
+          { name: 'Political Science', code: 'political_science' },
+          { name: 'Geography', code: 'geography' },
+          { name: 'Sociology', code: 'sociology' },
+          { name: 'Psychology', code: 'psychology' }
+        ]
+      };
+
+      streamSelect.addEventListener('change', (e) => {
+        const stream = e.target.value;
+        subjectSelect.innerHTML = '<option value="">-- Choose Subject --</option>';
+
+        if (subjects[stream]) {
+          subjects[stream].forEach((s) => {
+            const opt = document.createElement('option');
+            opt.value = s.code;
+            opt.textContent = s.name;
+            subjectSelect.appendChild(opt);
+          });
+          subjectSection.classList.remove('hidden');
+        } else {
+          subjectSection.classList.add('hidden');
+        }
+      });
+
+      continueBtn.addEventListener('click', () => {
+        const subject = subjectSelect.value;
+        if (!subject) return alert('Please select a subject');
+        window.location.href = `chapter-selection.html?stream=${streamSelect.value}&subject=${subject}`;
+      });
     </script>
-</body>
+  </body>
 </html>
